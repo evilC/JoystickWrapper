@@ -39,3 +39,23 @@ Return objects are COM objects, so be aware that:
   * To get the max index of an array, use `var.MaxIndex()` not the regular AHK `var.Length()`  
 
 For more info, see the demo AHK script in the JoystickWrapper folder.  
+
+##Goals
+###Must Have
+  * 100% Event-driven reporting of stick states (From the perspective of the AHK code)  
+  ie you pass the wrapper a callback and a stick GUID, and it fires the callback only when it changes
+  * Full 8 axis, 128 button, 4 POV support
+  * Either native 0..65535 reporting, or a rescaled range that does not sit at an odd value  
+  * Ability to get names of sticks  
+
+###Should Have
+  * Ability to subscribe to individual axes
+  * Ability to subscribe to individual buttons
+  * Ability to subscribe to individual POVs
+  * Ability to subscribe to individual POV *directions* like UCR currently does
+
+###Could Have
+  * Integration with Nefarius' upcoming [HidGuardian / HidCerberus](https://github.com/nefarius/ViGEm) system
+    This would allow hiding of the phyical stick from any other application than JoystickWrapper  
+    In this manner, true "remapping" of sticks could be achieved, in combination with Shaul's vJoy or Nefarius' [ViGEm](https://github.com/nefarius/ViGEm)
+    
