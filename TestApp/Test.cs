@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 using JWNameSpace;
 
+// App to test JoystickWrapper's functionality just using C#, so you can debug in VS etc
 namespace TestApp
 {
     class Test
@@ -14,12 +15,12 @@ namespace TestApp
         {
             var jw = new JoystickWrapper();
             var devs = jw.GetDevices();
+
             var guid = devs[0].Guid;
-            ////jw.ConsolePollStick(guid);
-            //while (true)
-            //{
-            //    jw.PollStick(guid);
-            //}
+            jw.AcquireStick(guid);
+            // Dunno at this point how to implement a handler in C#
+            // Only know how to do it in AHK...
+            //jw.MonitorStick(handler, guid);
         }
     }
 }
