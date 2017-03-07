@@ -27,7 +27,7 @@ At the time of writing, I am starting a career in automated test using C#, so I 
 There is also a DirectX wrapper for C# called [SharpDX ](http://sharpdx.org/) which allows easy reading of sticks in C#, so over the course of a weeked I sat down and knocked up a POC for reading sticks in AHK via DirectX.  
 
 ##How?
-  1. You load the JoystickWrapper DLL from AutoHotkey, using Lexikos' CLR library.  
+  1. You load the C# JoystickWrapper DLL from AutoHotkey, using Lexikos' CLR library.  
   ```asm := CLR_LoadLibrary("JoystickWrapper.dll")```
   2. You then instantiate the `JoystickWrapper` class from the DLL, again using CLR  
   ```jw := asm.CreateInstance("JWNameSpace.JoystickWrapper")```
