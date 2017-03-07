@@ -1,5 +1,9 @@
 # JoystickWrapper
 
+###[AHK Forum Thread](https://autohotkey.com/boards/viewtopic.php?f=19&t=28889) (Code contributions, design input etc all very much welcome)
+
+---
+
 ##What?
 A C# DLL wrapper using SharpDX, to replace AHK's joystick functionality
 
