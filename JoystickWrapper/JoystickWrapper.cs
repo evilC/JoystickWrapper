@@ -71,7 +71,6 @@ namespace JWNameSpace
 
                     //Debug.WriteLine(String.Format("AHK| DevReports Length: {0}", devReports.Count));
                     handler.Handle(new DeviceReport() { Guid = guid, DeviceReports = devReports.ToArray() });
-                    Thread.Sleep(10);
                 }
             }));
             t.Start();
