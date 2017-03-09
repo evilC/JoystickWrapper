@@ -66,11 +66,12 @@ namespace JWNameSpace
                     {
                         devReports.Add(new DeviceReports() { InputName = state.Offset.ToString(), Value = state.Value });
                     }
-                    if (devReports.Count == 0)
-                        continue;
-
-                    //Debug.WriteLine(String.Format("AHK| DevReports Length: {0}", devReports.Count));
-                    handler.Handle(new DeviceReport() { Guid = guid, DeviceReports = devReports.ToArray() });
+                    if (devReports.Count != 0)
+                    {
+                        //Debug.WriteLine(String.Format("AHK| DevReports Length: {0}", devReports.Count));
+                        handler.Handle(new DeviceReport() { Guid = guid, DeviceReports = devReports.ToArray() });
+                    }
+                    Thread.Sleep(1);
                 }
             }));
             t.Start();
