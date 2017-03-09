@@ -58,7 +58,6 @@ namespace JWNameSpace
                 threadRunning = true;
                 while (threadRunning)
                 {
-                    //Debug.WriteLine("AHK| INSIDE THREAD , WHILE- " + guid);
                     var devReports = new List<DeviceReports>();
                     joystick.Poll();
                     var datas = joystick.GetBufferedData();
@@ -72,6 +71,7 @@ namespace JWNameSpace
 
                     //Debug.WriteLine(String.Format("AHK| DevReports Length: {0}", devReports.Count));
                     handler.Handle(new DeviceReport() { Guid = guid, DeviceReports = devReports.ToArray() });
+                    Thread.Sleep(10);
                 }
             }));
             t.Start();

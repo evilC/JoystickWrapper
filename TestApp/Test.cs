@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 using JWNameSpace;
+using System.Dynamic;
 
 // App to test JoystickWrapper's functionality just using C#, so you can debug in VS etc
 namespace TestApp
@@ -18,9 +19,11 @@ namespace TestApp
 
             var guid = devs[0].Guid;
             jw.AcquireStick(guid);
-            // Dunno at this point how to implement a handler in C#
-            // Only know how to do it in AHK...
-            //jw.MonitorStick(handler, guid);
+            dynamic obj = new ExpandoObject();
+            obj.Handle = new Action<JoystickWrapper.DeviceReport>((report) => {
+                Console.WriteLine(String.Format("AHK| Device: {0}, Axis: {1}, Value: {2}", report.Guid, report.DeviceReports[0].InputName, report.DeviceReports[0].Value));
+            });
+            jw.MonitorStick(obj, guid);
         }
     }
 }
