@@ -74,6 +74,7 @@ DeviceSelected:
             if (!IsObject(polled_guids))
                 polled_guids := {}
             polled_guids[guid] := 1
+			; ToDo: Implement capability detection and axis selection
 			jw.SubscribeAxis(guid, "x", new Handler(guid, "x"))
 			jw.SubscribeAxis(guid, "y", new Handler(guid, "y"))
         } else {

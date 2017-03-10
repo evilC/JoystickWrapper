@@ -98,8 +98,8 @@ namespace JWNameSpace
         }
 
         // Monitor thread.
-        // Watches any axes that have been subscribed to
-        // Examines incoming events for that stick to see if any match subscribed inputs
+        // Watches any sticks that have been subscribed to
+        // Examines incoming events for subscribed sticks to see if any match subscribed inputs for that stick
         // If any are found, fires the callback associated with the subscription
         public void MonitorSticks()
         {
@@ -108,23 +108,25 @@ namespace JWNameSpace
                 threadRunning = true;
                 while (threadRunning)
                 {
+                    // Iterate subscribed sticks
                     foreach (var subscribedStick in subscribedSticks)
                     {
                         var guid = subscribedStick.Key;
                         var joystick = subscribedStick.Value.joystick;
                         var subscriptions = subscribedStick.Value.subscriptions;
-                        if (subscriptions.Count > 0)
+                        // Poll the stick
+                        joystick.Poll();
+                        var data = joystick.GetBufferedData();
+                        // Iterate each report
+                        foreach (var state in data)
                         {
-                            joystick.Poll();
-                            var data = joystick.GetBufferedData();
-                            foreach (var state in data)
+                            // Do we have any subscriptions for that input?
+                            if (subscriptions.ContainsKey(state.Offset))
                             {
-                                if (subscriptions.ContainsKey(state.Offset))
+                                // Fire all callbacks for that input
+                                foreach (var subscribedInput in subscriptions[state.Offset])
                                 {
-                                    foreach (var subscribedInput in subscriptions[state.Offset])
-                                    {
-                                        subscribedInput.Handle(state.Value);
-                                    }
+                                    subscribedInput.Handle(state.Value);
                                 }
                             }
                         }
