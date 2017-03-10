@@ -17,7 +17,9 @@ namespace TestApp
             var jw = new JoystickWrapper();
 
             var devs = jw.GetDevices();
-            var guid = devs[0].Guid;
+            var dev = devs[0];
+
+            //var guid = devs[0].Guid;
             //var guid = "da2e2e00-19ea-11e6-8002-444553540000";  // Hard-code a specific stick here if you wish
 
             // Demo - three subscriptions requested
@@ -26,27 +28,28 @@ namespace TestApp
             dynamic axisHandler = new ExpandoObject();
             axisHandler.Handle = new Action<int>((value) =>
             {
-                Console.WriteLine("X Value: " + value);
+                Console.WriteLine("First Axis Value: " + value);
             });
-            jw.Subscribe(guid, JoystickWrapper.InputType.AXIS, 1, axisHandler);
+            jw.Subscribe(dev.Guid, JoystickWrapper.InputType.AXIS, 1, axisHandler);
+            //jw.SubscribeDev(devs[0].Axis.Last(), axisHandler);
 
             // Subscription #2 - Button 128
             dynamic buttonHandler = new ExpandoObject();
             buttonHandler.Handle = new Action<int>((value) =>
             {
-                Console.WriteLine("Button 128 Value: " + value);
+                Console.WriteLine("First Button Value: " + value);
             });
 
-            jw.Subscribe(guid, JoystickWrapper.InputType.BUTTON, 128, buttonHandler);
+            jw.Subscribe(dev.Guid, JoystickWrapper.InputType.BUTTON, 1, buttonHandler);
 
             // Subscription #3 - POV 4
             dynamic povHandler = new ExpandoObject();
             povHandler.Handle = new Action<int>((value) =>
             {
-                Console.WriteLine("POV 4 Value: " + value);
+                Console.WriteLine("First POV Value: " + value);
             });
 
-            jw.Subscribe(guid, JoystickWrapper.InputType.POV, 4, povHandler);
+            jw.Subscribe(dev.Guid, JoystickWrapper.InputType.POV, 1, povHandler);
 
         }
     }

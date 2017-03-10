@@ -76,7 +76,8 @@ DeviceSelected:
             polled_guids[guid] := 1
 			; ToDo: Implement capability detection and axis selection
 			;jw.Subscribe(guid, jw.InputType.AXIS, 1, new Handler(guid, "Axis X"))	; Why can I not access the enum?
-			jw.Subscribe(guid, jw.inputTypes.Axis, 1, new Handler(guid, "Axis X"))
+			;~ jw.SubscribeDev(dev.Axis[1], new Handler(guid, "Axis X"))
+			jw.Subscribe(guid, jw.inputTypes.Axis, 8, new Handler(guid, "Axis 8"))
 			jw.Subscribe(guid, jw.inputTypes.Button, 128, new Handler(guid, "Button 128"))
 			jw.Subscribe(guid, jw.inputTypes.POV, 4, new Handler(guid, "POV 4"))
         } else {

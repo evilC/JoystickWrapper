@@ -128,19 +128,6 @@ namespace JWNameSpace
         }
         public InputTypes inputTypes = new InputTypes();
 
-        // Reply for GetDevices()
-        public class DeviceInfo
-        {
-            public DeviceInfo(DeviceInstance deviceInstance)
-            {
-                Name = deviceInstance.InstanceName;
-                Guid = deviceInstance.InstanceGuid.ToString();
-            }
-
-            public string Name { get; set; }
-            public string Guid { get; set; }
-        }
-
         // =================================================================================
 
         public JoystickWrapper()
@@ -165,6 +152,21 @@ namespace JWNameSpace
             var joystick = subscribedSticks[guid].joystick;
 
             subscribedSticks[guid].Add(index, inputType, handler);
+        }
+
+        public void SubscribeDev(JoystickWrapper.JoystickInput input, dynamic handler)
+        {
+            //var guid = new Guid(guidStr);
+            //var devinfo = input.parent;
+            //var guid = new Guid(devinfo.Guid);
+            var guid = new Guid("83f38eb0-7433-11e6-8007-444553540000");
+            if (!subscribedSticks.ContainsKey(guid))
+            {
+                subscribedSticks[guid] = new StickSubscriptions(guid);
+            }
+            var joystick = subscribedSticks[guid].joystick;
+
+            subscribedSticks[guid].Add(input.index, input.inputType, handler);
         }
 
         // Monitor thread.
@@ -228,5 +230,84 @@ namespace JWNameSpace
             }
             return deviceList.ToArray();
         }
+
+        public DeviceInfo GetDeviceByGuid(string guidStr)
+        {
+            var guid = new Guid(guidStr);
+            var devices = directInput.GetDevices();
+            foreach (var deviceInstance in devices)
+            {
+                if (deviceInstance.Type != DeviceType.Joystick
+                    && deviceInstance.Type != DeviceType.Gamepad
+                    && deviceInstance.Type != DeviceType.FirstPerson
+                    && deviceInstance.Type != DeviceType.Flight
+                    && deviceInstance.Type != DeviceType.Driving)
+                    continue;
+                if (deviceInstance.InstanceGuid == guid)
+                {
+                    return new DeviceInfo(deviceInstance);
+                }
+            }
+            return null;
+        }
+
+        // Reply for GetDevices()
+        public class DeviceInfo
+        {
+            //public SharpDX.DirectInput.Capabilities caps { get; set; }
+            //public Dictionary<string, int> caps = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            //public List<JoystickInput> Axis = new List<JoystickInput>();
+            public JoystickInput[] Axis;
+            public List<JoystickInput> Button = new List<JoystickInput>();
+            public List<JoystickInput> POV = new List<JoystickInput>();
+
+            //public JoystickCaps caps = new JoystickCaps();
+            public DeviceInfo(DeviceInstance deviceInstance)
+            {
+                var joystick = new Joystick(directInput, deviceInstance.InstanceGuid);
+                var axes = new List<JoystickInput>();
+                for (var i = 0; i <= joystick.Capabilities.AxeCount; i++)
+                {
+                    axes.Add(new JoystickInput(this, InputType.AXIS, i));
+                    Axis = axes.ToArray();
+                }
+                for (var i = 0; i <= joystick.Capabilities.ButtonCount; i++)
+                {
+                    Button.Add(new JoystickInput(this, InputType.BUTTON, i));
+                }
+                for (var i = 0; i <= joystick.Capabilities.PovCount; i++)
+                {
+                    POV.Add(new JoystickInput(this, InputType.POV, i));
+                }
+
+                Name = deviceInstance.InstanceName;
+                Guid = deviceInstance.InstanceGuid.ToString();
+            }
+
+            public string Name { get; set; }
+            public string Guid { get; set; }
+        }
+
+        public class JoystickInput
+        {
+            public DeviceInfo parent { get; set; }
+            public InputType inputType { get; set; }
+            public int index { get; set; }
+
+            public JoystickInput(DeviceInfo parentDevice, InputType iType, int i)
+            {
+                index = i;
+                parent = parentDevice;
+                inputType = iType;
+            }
+        }
+
+        //public class JoystickCaps
+        //{
+        //    public int Axes { get; set; }
+        //    public int Buttons { get; set; }
+        //    public int POVs { get; set; }
+        //}
+
     }
 }
