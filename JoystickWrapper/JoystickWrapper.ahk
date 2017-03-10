@@ -1,3 +1,10 @@
+/*
+JoystickWrapper Test script for AHK
+
+Loads the JoystickWrapper DLL via CLR
+Allows the user to subscribe to sticks and view the data coming from them
+*/
+
 ; Include Lexikos' CLR library
 #include CLR.ahk
 OutputDebug DBGVIEWCLEAR
@@ -15,16 +22,17 @@ return
 ; Called whenever a joystick changes
 class Handler
 {
-    Handle(status)
+	__New(guid, axis){
+		this.guid := guid
+		this.axis := axis
+	}
+	
+    Handle(value)
     {
 		global hDeviceReports, device_list
-        data := status.DeviceReports
-        Loop % data.MaxIndex()+1 {
-			i := A_Index - 1
-			Gui, ListView, % hDeviceReports
-			row := LV_Add(, device_list[status.Guid], data[i].InputName, data[i].Value)
-			LV_Modify(row, "vis")
-        }
+		Gui, ListView, % hDeviceReports
+		row := LV_Add(, this.guid, this.axis, value)
+		LV_Modify(row, "vis")
     }
 }
 
@@ -66,7 +74,8 @@ DeviceSelected:
             if (!IsObject(polled_guids))
                 polled_guids := {}
             polled_guids[guid] := 1
-			jw.MonitorStick(Handler, guid)
+			jw.SubscribeAxis(guid, "x", new Handler(guid, "x"))
+			jw.SubscribeAxis(guid, "y", new Handler(guid, "y"))
         } else {
             if (ObjHasKey(polled_guids, guid)){
                 polled_guids.Delete(guid)
