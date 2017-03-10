@@ -10,31 +10,91 @@ Allows the user to subscribe to sticks and view the data coming from them
 OutputDebug DBGVIEWCLEAR
 
 GoSub, BuildGUI
+;~ ; Load the C# DLL
+;~ asm := CLR_LoadLibrary("bin\debug\JoystickWrapper.dll")
+;~ ; Use CLR to instantiate a class from within the DLL
+;~ jw := asm.CreateInstance("JWNameSpace.JoystickWrapper")
 
-; Load the C# DLL
-asm := CLR_LoadLibrary("bin\debug\JoystickWrapper.dll")
-; Use CLR to instantiate a class from within the DLL
-jw := asm.CreateInstance("JWNameSpace.JoystickWrapper")
-
-GoSub, Init
+jw := new JoystickWrapper("bin\debug\JoystickWrapper.dll")
+guid := jw.GetAnyDeviceGuid()
+;guid := "da2e2e00-19ea-11e6-8002-444553540000"
+jw.Subscribe(guid, jw.InputTypes.Axis, 1, Func("TestFunc").Bind("X"))
+jw.Subscribe(guid, jw.InputTypes.Axis, 2, Func("TestFunc").Bind("Y"))
+jw.Subscribe(guid, jw.InputTypes.Axis, 3, Func("TestFunc").Bind("Z"))
+jw.Subscribe(guid, jw.InputTypes.Axis, 4, Func("TestFunc").Bind("Rx"))
+jw.Subscribe(guid, jw.InputTypes.Axis, 5, Func("TestFunc").Bind("Ry"))
+jw.Subscribe(guid, jw.InputTypes.Axis, 6, Func("TestFunc").Bind("Rz"))
+jw.Subscribe(guid, jw.InputTypes.Axis, 7, Func("TestFunc").Bind("S0"))
+jw.Subscribe(guid, jw.InputTypes.Axis, 8, Func("TestFunc").Bind("S1"))
+;GoSub, Init
 return
 
-; Called whenever a joystick changes
-class Handler
-{
-	__New(guid, axis){
-		this.guid := guid
-		this.axis := axis
+TestFunc(axis, value){
+	ToolTip % "Axis: " axis ", value: " value
+}
+
+class JoystickWrapper {
+	__New(dllpath){
+		this.DllPath := dllpath
+		; Load the C# DLL
+		asm := CLR_LoadLibrary(dllpath)
+		; Use CLR to instantiate a class from within the DLL
+		this.Interface := asm.CreateInstance("JWNameSpace.JoystickWrapper")
+		this.InputTypes := this.Interface.inputTypes
 	}
 	
-    Handle(value)
-    {
+	Subscribe(guid, type, index, callback){
+		this.Interface.Subscribe(guid, type, index, new this.Handler(callback))
+	}
+	
+	GetDevices(){
+		device_list := {}
+		_device_list := this.Interface.GetDevices()
+		ct := _device_list.MaxIndex()+1
+		Loop % ct {
+			dev := _device_list[A_Index - 1]
+			device_list[dev.Guid] := dev.Name
+		}
+		return device_list
+	}
+	
+	GetAnyDeviceGuid(){
+		return this.Interface.GetDevices()[0].Guid
+		devices := this.GetDevices()
+		for guid, dev in devices {
+			return guid
+		}
+		return 0
+	}
+	
+	class Handler {
+		__New(callback){
+			this.callback := callback
+		}
+		
+		Handle(value){
+			this.Callback.Call(value)
+		}
+	}
+}
+
+;~ ; Called whenever a joystick changes
+;~ class Handler
+;~ {
+	;~ __New(guid, axis){
+		;~ this.guid := guid
+		;~ this.axis := axis
+	;~ }
+	
+    ;~ Handle(value)
+    ;~ {
+		;~ msgbox
 		global hDeviceReports, device_list
 		Gui, ListView, % hDeviceReports
 		row := LV_Add(, this.guid, this.axis, value)
 		LV_Modify(row, "vis")
-    }
-}
+    ;~ }
+;~ }
 
 ; Gui handling code =================================
 

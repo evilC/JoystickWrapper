@@ -154,20 +154,20 @@ namespace JWNameSpace
             subscribedSticks[guid].Add(index, inputType, handler);
         }
 
-        public void SubscribeDev(JoystickWrapper.JoystickInput input, dynamic handler)
-        {
-            //var guid = new Guid(guidStr);
-            //var devinfo = input.parent;
-            //var guid = new Guid(devinfo.Guid);
-            var guid = new Guid("83f38eb0-7433-11e6-8007-444553540000");
-            if (!subscribedSticks.ContainsKey(guid))
-            {
-                subscribedSticks[guid] = new StickSubscriptions(guid);
-            }
-            var joystick = subscribedSticks[guid].joystick;
+        //public void SubscribeDev(JoystickWrapper.JoystickInput input, dynamic handler)
+        //{
+        //    //var guid = new Guid(guidStr);
+        //    //var devinfo = input.parent;
+        //    //var guid = new Guid(devinfo.Guid);
+        //    var guid = new Guid("83f38eb0-7433-11e6-8007-444553540000");
+        //    if (!subscribedSticks.ContainsKey(guid))
+        //    {
+        //        subscribedSticks[guid] = new StickSubscriptions(guid);
+        //    }
+        //    var joystick = subscribedSticks[guid].joystick;
 
-            subscribedSticks[guid].Add(input.index, input.inputType, handler);
-        }
+        //    subscribedSticks[guid].Add(input.index, input.inputType, handler);
+        //}
 
         // Monitor thread.
         // Watches any sticks that have been subscribed to
