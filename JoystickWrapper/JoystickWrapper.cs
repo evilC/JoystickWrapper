@@ -22,41 +22,111 @@ namespace JWNameSpace
         {
             public Joystick joystick { get; set; }
             //The SharpDX.DirectInput.JoystickOffset property from a joystick report identifies the button or axis that the data came from
-            public Dictionary<SharpDX.DirectInput.JoystickOffset, List<dynamic>> subscriptions { get; set; }
+            public Dictionary<JoystickOffset, List<dynamic>> subscriptions = new Dictionary<JoystickOffset, List<dynamic>>();
 
             public StickSubscriptions(Guid guid)
             {
-                subscriptions = new Dictionary<JoystickOffset, List<dynamic>>();
                 joystick = new Joystick(directInput, guid);
+                var caps = joystick.Capabilities;
+
+                // Build subscription arrays according to capabilities
+                for (var i = 1; i <= caps.AxeCount; i++)
+                {
+                    subscriptions.Add(inputMappings[InputType.AXIS][i - 1], new List<dynamic>());
+                }
+
+                for (var i = 1; i <= caps.ButtonCount; i++)
+                {
+                    subscriptions.Add(inputMappings[InputType.BUTTON][i - 1], new List<dynamic>());
+                }
+
                 // Set BufferSize in order to use buffered data.
                 joystick.Properties.BufferSize = 128;
 
                 joystick.Acquire();
             }
 
-            public void Add(string axisStr, dynamic handler)
+            public void Add(int index, InputType inputType, dynamic handler)
             {
-                var axis = joystickAxes[axisStr];
-                if (!subscriptions.ContainsKey(axis))
+                var input = inputMappings[inputType][index-1];
+                if (!subscriptions.ContainsKey(input))
                 {
-                    subscriptions[axis] = new List<dynamic>();
+                    subscriptions[input] = new List<dynamic>();
                 }
-                subscriptions[axis].Add(handler);
+                subscriptions[input].Add(handler);
             }
         }
 
-        // Lookup table from string to Axis Identifier
-        public static Dictionary<string, SharpDX.DirectInput.JoystickOffset> joystickAxes = new Dictionary<string, JoystickOffset>(StringComparer.OrdinalIgnoreCase)
-        {
-            { "X", SharpDX.DirectInput.JoystickOffset.X},
-            { "Y", SharpDX.DirectInput.JoystickOffset.Y},
-            { "Z", SharpDX.DirectInput.JoystickOffset.Z},
-            { "Rx", SharpDX.DirectInput.JoystickOffset.RotationX},
-            { "Ry", SharpDX.DirectInput.JoystickOffset.RotationY},
-            { "Rz", SharpDX.DirectInput.JoystickOffset.RotationZ},
-            { "S0", SharpDX.DirectInput.JoystickOffset.Sliders0},
-            { "S1", SharpDX.DirectInput.JoystickOffset.Sliders1}
+        public static Dictionary<InputType, List<JoystickOffset>> inputMappings = new Dictionary<InputType, List<JoystickOffset>>(){
+            {
+                InputType.AXIS, new List<JoystickOffset>()
+                {
+                    JoystickOffset.X,
+                    JoystickOffset.Y,
+                    JoystickOffset.Z,
+                    JoystickOffset.RotationX,
+                    JoystickOffset.RotationY,
+                    JoystickOffset.RotationZ,
+                    JoystickOffset.Sliders0,
+                    JoystickOffset.Sliders1
+                }
+            },
+            {
+                InputType.BUTTON, new List<JoystickOffset>()
+                {
+                    JoystickOffset.Buttons0, JoystickOffset.Buttons1, JoystickOffset.Buttons2, JoystickOffset.Buttons3, JoystickOffset.Buttons4, 
+                    JoystickOffset.Buttons5, JoystickOffset.Buttons6, JoystickOffset.Buttons7, JoystickOffset.Buttons8, JoystickOffset.Buttons9, JoystickOffset.Buttons10, 
+                    JoystickOffset.Buttons11, JoystickOffset.Buttons12, JoystickOffset.Buttons13, JoystickOffset.Buttons14, JoystickOffset.Buttons15, JoystickOffset.Buttons16, 
+                    JoystickOffset.Buttons17, JoystickOffset.Buttons18, JoystickOffset.Buttons19, JoystickOffset.Buttons20, JoystickOffset.Buttons21, JoystickOffset.Buttons22, 
+                    JoystickOffset.Buttons23, JoystickOffset.Buttons24, JoystickOffset.Buttons25, JoystickOffset.Buttons26, JoystickOffset.Buttons27, JoystickOffset.Buttons28, 
+                    JoystickOffset.Buttons29, JoystickOffset.Buttons30, JoystickOffset.Buttons31, JoystickOffset.Buttons32, JoystickOffset.Buttons33, JoystickOffset.Buttons34, 
+                    JoystickOffset.Buttons35, JoystickOffset.Buttons36, JoystickOffset.Buttons37, JoystickOffset.Buttons38, JoystickOffset.Buttons39, JoystickOffset.Buttons40, 
+                    JoystickOffset.Buttons41, JoystickOffset.Buttons42, JoystickOffset.Buttons43, JoystickOffset.Buttons44, JoystickOffset.Buttons45, JoystickOffset.Buttons46, 
+                    JoystickOffset.Buttons47, JoystickOffset.Buttons48, JoystickOffset.Buttons49, JoystickOffset.Buttons50, JoystickOffset.Buttons51, JoystickOffset.Buttons52, 
+                    JoystickOffset.Buttons53, JoystickOffset.Buttons54, JoystickOffset.Buttons55, JoystickOffset.Buttons56, JoystickOffset.Buttons57, JoystickOffset.Buttons58, 
+                    JoystickOffset.Buttons59, JoystickOffset.Buttons60, JoystickOffset.Buttons61, JoystickOffset.Buttons62, JoystickOffset.Buttons63, JoystickOffset.Buttons64, 
+                    JoystickOffset.Buttons65, JoystickOffset.Buttons66, JoystickOffset.Buttons67, JoystickOffset.Buttons68, JoystickOffset.Buttons69, JoystickOffset.Buttons70, 
+                    JoystickOffset.Buttons71, JoystickOffset.Buttons72, JoystickOffset.Buttons73, JoystickOffset.Buttons74, JoystickOffset.Buttons75, JoystickOffset.Buttons76, 
+                    JoystickOffset.Buttons77, JoystickOffset.Buttons78, JoystickOffset.Buttons79, JoystickOffset.Buttons80, JoystickOffset.Buttons81, JoystickOffset.Buttons82, 
+                    JoystickOffset.Buttons83, JoystickOffset.Buttons84, JoystickOffset.Buttons85, JoystickOffset.Buttons86, JoystickOffset.Buttons87, JoystickOffset.Buttons88, 
+                    JoystickOffset.Buttons89, JoystickOffset.Buttons90, JoystickOffset.Buttons91, JoystickOffset.Buttons92, JoystickOffset.Buttons93, JoystickOffset.Buttons94, 
+                    JoystickOffset.Buttons95, JoystickOffset.Buttons96, JoystickOffset.Buttons97, JoystickOffset.Buttons98, JoystickOffset.Buttons99, JoystickOffset.Buttons100, 
+                    JoystickOffset.Buttons101, JoystickOffset.Buttons102, JoystickOffset.Buttons103, JoystickOffset.Buttons104, JoystickOffset.Buttons105, JoystickOffset.Buttons106, 
+                    JoystickOffset.Buttons107, JoystickOffset.Buttons108, JoystickOffset.Buttons109, JoystickOffset.Buttons110, JoystickOffset.Buttons111, JoystickOffset.Buttons112, 
+                    JoystickOffset.Buttons113, JoystickOffset.Buttons114, JoystickOffset.Buttons115, JoystickOffset.Buttons116, JoystickOffset.Buttons117, JoystickOffset.Buttons118, 
+                    JoystickOffset.Buttons119, JoystickOffset.Buttons120, JoystickOffset.Buttons121, JoystickOffset.Buttons122, JoystickOffset.Buttons123, JoystickOffset.Buttons124, 
+                    JoystickOffset.Buttons125, JoystickOffset.Buttons126, JoystickOffset.Buttons127
+                }
+            },
+            {
+                InputType.POV, new List<JoystickOffset>()
+                {
+                    JoystickOffset.PointOfViewControllers0,
+                    JoystickOffset.PointOfViewControllers1,
+                    JoystickOffset.PointOfViewControllers2,
+                    JoystickOffset.PointOfViewControllers3
+                }
+
+            }
         };
+
+        // For some reason the AHK code cannot access this Enum
+        public enum InputType {AXIS, BUTTON, POV };
+
+        //public Dictionary<string, InputType> inputTypes = new Dictionary<string, InputType>(StringComparer.OrdinalIgnoreCase)
+        //{
+        //    {"AXIS", InputType.AXIS},
+        //    {"BUTTON", InputType.BUTTON},
+        //    {"POV", InputType.POV}
+        //};
+
+        public class InputTypes
+        {
+            public InputType Axis { get { return InputType.AXIS; } }
+            public InputType Button { get { return InputType.BUTTON; } }
+            public InputType POV { get { return InputType.POV; } }
+        }
+        public InputTypes inputTypes = new InputTypes();
 
         // Reply for GetDevices()
         public class DeviceInfo
@@ -83,9 +153,9 @@ namespace JWNameSpace
         /// Adds a Subscription to an axis
         /// </summary>
         /// <param name="guidStr">Guid of the stick to subscribe to</param>
-        /// <param name="axisStr">Name of the axis to subscribe to</param>
+        /// <param name="index">Name of the axis to subscribe to</param>
         /// <param name="handler">Callback to fire when axis changes</param>
-        public void SubscribeAxis(string guidStr, string axisStr, dynamic handler)
+        public void Subscribe(string guidStr, InputType inputType, int index, dynamic handler)
         {
             var guid = new Guid(guidStr);
             if (!subscribedSticks.ContainsKey(guid))
@@ -94,7 +164,7 @@ namespace JWNameSpace
             }
             var joystick = subscribedSticks[guid].joystick;
 
-            subscribedSticks[guid].Add(axisStr, handler);
+            subscribedSticks[guid].Add(index, inputType, handler);
         }
 
         // Monitor thread.
