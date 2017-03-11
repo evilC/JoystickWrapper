@@ -1,11 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Diagnostics;
 
 using JWNameSpace;
-using System.Dynamic;
+using System.Threading;
 
 // App to test JoystickWrapper's functionality just using C#, so you can debug in VS etc
 namespace TestApp
@@ -14,16 +11,46 @@ namespace TestApp
     {
         static void Main(string[] args)
         {
+            Debug.WriteLine("DBGVIEWCLEAR");
             var jw = new JoystickWrapper();
-            var devs = jw.GetDevices();
 
-            var guid = devs[0].Guid;
-            jw.AcquireStick(guid);
-            dynamic obj = new ExpandoObject();
-            obj.Handle = new Action<JoystickWrapper.DeviceReport>((report) => {
-                Console.WriteLine(String.Format("AHK| Device: {0}, Axis: {1}, Value: {2}", report.Guid, report.DeviceReports[0].InputName, report.DeviceReports[0].Value));
+            var devs = jw.GetDevices();
+            var dev = devs[0];
+
+            //var guid = devs[0].Guid;
+            //var guid = "da2e2e00-19ea-11e6-8002-444553540000";  // Hard-code a specific stick here if you wish
+
+            // Anonymous funcs to monitor callbacks
+            dynamic axisHandler = new Action<int>((value) =>
+            {
+                Console.WriteLine("Axis Value: " + value);
             });
-            jw.MonitorStick(obj, guid);
+            dynamic buttonHandler = new Action<int>((value) =>
+            {
+                Console.WriteLine("Button Value: " + value);
+            });
+            dynamic povHandler = new Action<int>((value) =>
+            {
+                Console.WriteLine("POV Value: " + value);
+            });
+
+            //// Test
+            //jw.SubscribeAxis(dev.Guid, 1, axisHandler, "LV1");
+            //jw.SubscribeAxis(dev.Guid, 1, axisHandler, "LV1");
+            //Thread.Sleep(1000);
+            //jw.UnSubscribeAxis(dev.Guid, 1, "LV1");
+            //Thread.Sleep(1000);
+            //jw.SubscribeAxis(dev.Guid, 1, axisHandler, "LV1");
+
+            // Demo - three subscriptions requested
+            // Subscription #1 - Axis 1 (X)
+            jw.SubscribeAxis(dev.Guid, 1, axisHandler, "LV1");
+
+            // Subscription #2 - Button 128
+            jw.SubscribeButton(dev.Guid, 1, buttonHandler, "LV1");
+
+            // Subscription #3 - POV 4
+            jw.SubscribePov(dev.Guid, 1, povHandler, "LV1");
         }
     }
 }
