@@ -25,17 +25,15 @@ namespace TestApp
             // Demo - three subscriptions requested
 
             // Subscription #1 - Axis 1 (X)
-            dynamic axisHandler = new ExpandoObject();
-            axisHandler.Handle = new Action<int>((value) =>
+            dynamic axisHandler = new Action<int>((value) =>
             {
                 Console.WriteLine("First Axis Value: " + value);
             });
-            jw.SubscribeAxis(dev.Guid, 1, axisHandler);
-            //jw.SubscribeDev(devs[0].Axis.Last(), axisHandler);
+
+            jw.SubscribeAxis(dev.Guid, 1, axisHandler, "LV1");
 
             // Subscription #2 - Button 128
-            dynamic buttonHandler = new ExpandoObject();
-            buttonHandler.Handle = new Action<int>((value) =>
+            dynamic buttonHandler = new Action<int>((value) =>
             {
                 Console.WriteLine("First Button Value: " + value);
             });
@@ -43,13 +41,15 @@ namespace TestApp
             jw.SubscribeButton(dev.Guid, 1, buttonHandler);
 
             // Subscription #3 - POV 4
-            dynamic povHandler = new ExpandoObject();
-            povHandler.Handle = new Action<int>((value) =>
+            dynamic povHandler = new Action<int>((value) =>
             {
                 Console.WriteLine("First POV Value: " + value);
             });
 
             jw.SubscribePov(dev.Guid, 1, povHandler);
+
+            //jw.UnSubscribeAxis(dev.Guid, 1, "LV1");
+            //jw.SubscribeAxis(dev.Guid, 1, axisHandler, "LV1");
 
         }
     }

@@ -39,14 +39,27 @@ class JoystickWrapper {
 		this.Interface.SubscribeAxis(guid, index, callback)
 	}
 	
+	UnSubscribeAxis(guid, index){
+		this.Interface.UnSubscribeAxis(guid, index)
+	}
+	
 	SubscribeButton(guid, index, callback){
 		this.Interface.SubscribeButton(guid, index, callback)
+	}
+
+	UnSubscribeButton(guid, index){
+		this.Interface.UnSubscribeButton(guid, index)
 	}
 	
 	SubscribePov(guid, index, callback){
 		this.Interface.SubscribePov(guid, index, callback)
 	}
+
+	UnSubscribePov(guid, index){
+		this.Interface.UnSubscribePov(guid, index)
+	}
 	
+
 	GetDevices(){
 		device_list := {}
 		_device_list := this.Interface.GetDevices()
@@ -95,8 +108,8 @@ DeviceSelected:
         ; Check / Uncheck
         state := ErrorLevel == "C" ? 1 : 0
         LV_GetText(selected_device, A_EventInfo, 2)
+		dev := device_list[selected_device]
         if (state){
-			dev := device_list[selected_device]
 			Loop % dev.Axes {
 				jw.SubscribeAxis(selected_device, A_Index, Func("TestFunc").Bind(dev.Name, AxisList[A_Index] " Axis"), "LV1")
 			}
@@ -106,7 +119,17 @@ DeviceSelected:
 			Loop % dev.POVs {
 				jw.SubscribePov(selected_device, A_Index, Func("TestFunc").Bind(dev.Name, " POV " A_Index), "LV1")
 			}
-        }
+        } else {
+			Loop % dev.Axes {
+				jw.UnSubscribeAxis(selected_device, A_Index, "LV1")
+			}
+			Loop % dev.Buttons {
+				jw.UnSubscribeButton(selected_device, A_Index, "LV1")
+			}
+			Loop % dev.POVs {
+				jw.UnSubscribePov(selected_device, A_Index, "LV1")
+			}
+		}
     }
     return
 

@@ -55,6 +55,15 @@ namespace JWNameSpace
                 }
                 subscriptions[input].Add(id, handler);
             }
+
+            public void Remove(int index, InputType inputType, string id = "0")
+            {
+                var input = inputMappings[inputType][index - 1];
+                if (subscriptions.ContainsKey(input))
+                {
+                    subscriptions[input].Remove(id);
+                }
+            }
         }
 
         // Maps Axis / Button / POV numbers to Offset identidfiers
@@ -152,9 +161,15 @@ namespace JWNameSpace
         /// <param name="guidStr">Guid of the stick to subscribe to</param>
         /// <param name="index">Number of the axis to subscribe to</param>
         /// <param name="handler">Callback to fire when input changes</param>
+        /// <param name="id">ID of the subscriber. Can be left blank if you do not wish to allow multiple subscriptions to the same input</param>
         public void SubscribeAxis(string guidStr, int index, dynamic handler, string id = "0")
         {
             Subscribe(guidStr, InputType.AXIS, index, handler, id);
+        }
+
+        public void UnSubscribeAxis(string guidStr, int index, string id = "0")
+        {
+            UnSubscribe(guidStr, InputType.AXIS, index, id);
         }
 
         /// <summary>
@@ -163,9 +178,15 @@ namespace JWNameSpace
         /// <param name="guidStr">Guid of the stick to subscribe to</param>
         /// <param name="index">Button to subscribe to</param>
         /// <param name="handler">Callback to fire when input changes</param>
+        /// <param name="id">ID of the subscriber. Can be left blank if you do not wish to allow multiple subscriptions to the same input</param>
         public void SubscribeButton(string guidStr, int index, dynamic handler, string id = "0")
         {
             Subscribe(guidStr, InputType.BUTTON, index, handler, id);
+        }
+
+        public void UnSubscribeButton(string guidStr, int index, string id = "0")
+        {
+            UnSubscribe(guidStr, InputType.BUTTON, index, id);
         }
 
         /// <summary>
@@ -174,9 +195,15 @@ namespace JWNameSpace
         /// <param name="guidStr">Guid of the stick to subscribe to</param>
         /// <param name="index">Number of the POV to subscribe to</param>
         /// <param name="handler">Callback to fire when input changes</param>
+        /// <param name="id">ID of the subscriber. Can be left blank if you do not wish to allow multiple subscriptions to the same input</param>
         public void SubscribePov(string guidStr, int index, dynamic handler, string id = "0")
         {
             Subscribe(guidStr, InputType.POV, index, handler, id);
+        }
+
+        public void UnSubscribePov(string guidStr, int index, string id = "0")
+        {
+            UnSubscribe(guidStr, InputType.POV, index, id);
         }
 
         // ToDo - remove. Monitor loop should start and stop automatically
@@ -229,9 +256,22 @@ namespace JWNameSpace
             {
                 subscribedSticks[guid] = new StickSubscriptions(guid);
             }
-            var joystick = subscribedSticks[guid].joystick;
+            //var joystick = subscribedSticks[guid].joystick;
 
-            subscribedSticks[guid].Add(index, inputType, handler);
+            subscribedSticks[guid].Add(index, inputType, handler, id);
+        }
+
+        private void UnSubscribe(string guidStr, InputType inputType, int index, string id = "0")
+        {
+            var guid = new Guid(guidStr);
+            //if (subscribedSticks.ContainsKey(guid))
+            //{
+            //    //subscribedSticks.Remove(guid);
+            //    //subscribedSticks[guid] = new StickSubscriptions(guid);
+            //}
+            ////var joystick = subscribedSticks[guid].joystick;
+
+            subscribedSticks[guid].Remove(index, inputType, id);
         }
 
 
