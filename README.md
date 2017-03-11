@@ -41,6 +41,7 @@ There is also a DirectX wrapper for C# called [SharpDX ](http://sharpdx.org/) wh
 For more info, see the demo AHK scripts in the JoystickWrapper folder.  
 
 ##Goals
+~~striked items~~ are done
 ###Must Have
   * ~~100% Event-driven reporting of stick states (From the perspective of the AHK code)  
   ie you pass the wrapper a callback and a stick GUID, and it fires the callback only when it changes~~  
