@@ -22,7 +22,7 @@ namespace JWNameSpace
         {
             public Joystick joystick { get; set; }
             //The SharpDX.DirectInput.JoystickOffset property from a joystick report identifies the button or axis that the data came from
-            public Dictionary<JoystickOffset, List<dynamic>> subscriptions = new Dictionary<JoystickOffset, List<dynamic>>();
+            public Dictionary<JoystickOffset, Dictionary<string, dynamic>> subscriptions = new Dictionary<JoystickOffset, Dictionary<string, dynamic>>();
 
             public StickSubscriptions(Guid guid)
             {
@@ -32,12 +32,12 @@ namespace JWNameSpace
                 // Build subscription arrays according to capabilities
                 for (var i = 1; i <= caps.AxeCount; i++)
                 {
-                    subscriptions.Add(inputMappings[InputType.AXIS][i - 1], new List<dynamic>());
+                    subscriptions.Add(inputMappings[InputType.AXIS][i - 1], new Dictionary<string, dynamic>(StringComparer.OrdinalIgnoreCase));
                 }
 
                 for (var i = 1; i <= caps.ButtonCount; i++)
                 {
-                    subscriptions.Add(inputMappings[InputType.BUTTON][i - 1], new List<dynamic>());
+                    subscriptions.Add(inputMappings[InputType.BUTTON][i - 1], new Dictionary<string, dynamic>(StringComparer.OrdinalIgnoreCase));
                 }
 
                 // Set BufferSize in order to use buffered data.
@@ -46,14 +46,14 @@ namespace JWNameSpace
                 joystick.Acquire();
             }
 
-            public void Add(int index, InputType inputType, dynamic handler)
+            public void Add(int index, InputType inputType, dynamic handler, string id = "0")
             {
                 var input = inputMappings[inputType][index-1];
                 if (!subscriptions.ContainsKey(input))
                 {
-                    subscriptions[input] = new List<dynamic>();
+                    subscriptions[input] = new Dictionary<string, dynamic>(StringComparer.OrdinalIgnoreCase);
                 }
-                subscriptions[input].Add(handler);
+                subscriptions[input].Add(id, handler);
             }
         }
 
@@ -152,9 +152,9 @@ namespace JWNameSpace
         /// <param name="guidStr">Guid of the stick to subscribe to</param>
         /// <param name="index">Number of the axis to subscribe to</param>
         /// <param name="handler">Callback to fire when input changes</param>
-        public void SubscribeAxis(string guidStr, int index, dynamic handler)
+        public void SubscribeAxis(string guidStr, int index, dynamic handler, string id = "0")
         {
-            Subscribe(guidStr, InputType.AXIS, index, handler);
+            Subscribe(guidStr, InputType.AXIS, index, handler, id);
         }
 
         /// <summary>
@@ -163,9 +163,9 @@ namespace JWNameSpace
         /// <param name="guidStr">Guid of the stick to subscribe to</param>
         /// <param name="index">Button to subscribe to</param>
         /// <param name="handler">Callback to fire when input changes</param>
-        public void SubscribeButton(string guidStr, int index, dynamic handler)
+        public void SubscribeButton(string guidStr, int index, dynamic handler, string id = "0")
         {
-            Subscribe(guidStr, InputType.BUTTON, index, handler);
+            Subscribe(guidStr, InputType.BUTTON, index, handler, id);
         }
 
         /// <summary>
@@ -174,9 +174,9 @@ namespace JWNameSpace
         /// <param name="guidStr">Guid of the stick to subscribe to</param>
         /// <param name="index">Number of the POV to subscribe to</param>
         /// <param name="handler">Callback to fire when input changes</param>
-        public void SubscribePov(string guidStr, int index, dynamic handler)
+        public void SubscribePov(string guidStr, int index, dynamic handler, string id = "0")
         {
-            Subscribe(guidStr, InputType.POV, index, handler);
+            Subscribe(guidStr, InputType.POV, index, handler, id);
         }
 
         // ToDo - remove. Monitor loop should start and stop automatically
@@ -222,7 +222,7 @@ namespace JWNameSpace
         // Examines incoming events for subscribed sticks to see if any match subscribed inputs for that stick
         // If any are found, fires the callback associated with the subscription
 
-        private void Subscribe(string guidStr, InputType inputType, int index, dynamic handler)
+        private void Subscribe(string guidStr, InputType inputType, int index, dynamic handler, string id = "0")
         {
             var guid = new Guid(guidStr);
             if (!subscribedSticks.ContainsKey(guid))
@@ -260,7 +260,7 @@ namespace JWNameSpace
                                 // Fire all callbacks for that input
                                 foreach (var subscribedInput in subscriptions[state.Offset])
                                 {
-                                    subscribedInput(state.Value);
+                                    subscribedInput.Value(state.Value);
                                 }
                             }
                         }

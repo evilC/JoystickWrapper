@@ -98,13 +98,13 @@ DeviceSelected:
         if (state){
 			dev := device_list[selected_device]
 			Loop % dev.Axes {
-				jw.SubscribeAxis(selected_device, A_Index, Func("TestFunc").Bind(dev.Name, AxisList[A_Index] " Axis"))
+				jw.SubscribeAxis(selected_device, A_Index, Func("TestFunc").Bind(dev.Name, AxisList[A_Index] " Axis"), "LV1")
 			}
 			Loop % dev.Buttons {
-				jw.SubscribeButton(selected_device, A_Index, Func("TestFunc").Bind(dev.Name, "Button " A_Index))
+				jw.SubscribeButton(selected_device, A_Index, Func("TestFunc").Bind(dev.Name, "Button " A_Index), "LV1")
 			}
 			Loop % dev.POVs {
-				jw.SubscribePov(selected_device, A_Index, Func("TestFunc").Bind(dev.Name, " POV " A_Index))
+				jw.SubscribePov(selected_device, A_Index, Func("TestFunc").Bind(dev.Name, " POV " A_Index), "LV1")
 			}
         }
     }
