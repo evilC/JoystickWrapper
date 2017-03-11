@@ -321,6 +321,7 @@ namespace JWNameSpace
                                 // Fire all callbacks for that input
                                 foreach (var subscribedInput in subscriptions[state.Offset])
                                 {
+                                    //Debug.WriteLine(String.Format("JoystickWrapper| Firing callback for id {0}", subscribedInput.Key));
                                     subscribedInput.Value(state.Value);
                                 }
                             }

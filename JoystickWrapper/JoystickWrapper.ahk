@@ -15,28 +15,28 @@ class JoystickWrapper {
 		this.Interface := asm.CreateInstance("JWNameSpace.JoystickWrapper")
 	}
 	
-	SubscribeAxis(guid, index, callback){
-		this.Interface.SubscribeAxis(guid, index, callback)
+	SubscribeAxis(guid, index, callback, id := 0){
+		this.Interface.SubscribeAxis(guid, index, callback, id)
 	}
 	
-	UnSubscribeAxis(guid, index){
-		this.Interface.UnSubscribeAxis(guid, index)
+	UnSubscribeAxis(guid, index, id := 0){
+		this.Interface.UnSubscribeAxis(guid, index, id)
 	}
 	
-	SubscribeButton(guid, index, callback){
-		this.Interface.SubscribeButton(guid, index, callback)
+	SubscribeButton(guid, index, callback, id := 0){
+		this.Interface.SubscribeButton(guid, index, callback, id)
 	}
 
-	UnSubscribeButton(guid, index){
-		this.Interface.UnSubscribeButton(guid, index)
+	UnSubscribeButton(guid, index, id := 0){
+		this.Interface.UnSubscribeButton(guid, index, id)
 	}
 	
-	SubscribePov(guid, index, callback){
-		this.Interface.SubscribePov(guid, index, callback)
+	SubscribePov(guid, index, callback, id := 0){
+		this.Interface.SubscribePov(guid, index, callback, id)
 	}
 
-	UnSubscribePov(guid, index){
-		this.Interface.UnSubscribePov(guid, index)
+	UnSubscribePov(guid, index, id := 0){
+		this.Interface.UnSubscribePov(guid, index, id)
 	}
 	
 
