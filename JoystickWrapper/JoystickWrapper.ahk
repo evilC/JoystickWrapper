@@ -36,15 +36,15 @@ class JoystickWrapper {
 	}
 	
 	SubscribeAxis(guid, index, callback){
-		this.Interface.SubscribeAxis(guid, index, new this.Handler(callback))
+		this.Interface.SubscribeAxis(guid, index, callback)
 	}
 	
 	SubscribeButton(guid, index, callback){
-		this.Interface.SubscribeButton(guid, index, new this.Handler(callback))
+		this.Interface.SubscribeButton(guid, index, callback)
 	}
 	
 	SubscribePov(guid, index, callback){
-		this.Interface.SubscribePov(guid, index, new this.Handler(callback))
+		this.Interface.SubscribePov(guid, index, callback)
 	}
 	
 	GetDevices(){
@@ -65,16 +65,6 @@ class JoystickWrapper {
 			return guid
 		}
 		return 0
-	}
-	
-	class Handler {
-		__New(callback){
-			this.callback := callback
-		}
-		
-		Handle(value){
-			this.Callback.Call(value)
-		}
 	}
 }
 

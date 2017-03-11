@@ -260,7 +260,7 @@ namespace JWNameSpace
                                 // Fire all callbacks for that input
                                 foreach (var subscribedInput in subscriptions[state.Offset])
                                 {
-                                    subscribedInput.Handle(state.Value);
+                                    subscribedInput(state.Value);
                                 }
                             }
                         }
