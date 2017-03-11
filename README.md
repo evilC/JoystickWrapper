@@ -31,11 +31,13 @@ At the time of writing, I am starting a career in automated test using C#, so I 
 There is also a DirectX wrapper for C# called [SharpDX ](http://sharpdx.org/) which allows easy reading of sticks in C#, so over the course of a weeked I sat down and knocked up a POC for reading sticks in AHK via DirectX.  
 
 ##How do I use it in AutoHotkey?
-  1. Include the JoystickWrapper library  
+  1. Copy `JoystickWrapper.ahk` and all DLL files from the `JoystickWrapper` folder  
+  Place them in the same folder as your script
+  2. Include the JoystickWrapper library  
   ```#include JoystickWrapper.ahk```
-  2. Instantiate AHK `JoystickWrapper` class, passing it the path to the DLL  
+  3. Instantiate AHK `JoystickWrapper` class, passing it the path to the DLL  
   ```jw := new JoystickWrapper("JoystickWrapper.dll")```
-  3. You may now subscribe to inputs, eg using  
+  4. You may now subscribe to inputs, eg using  
   ```jw.SubscribeAxis(<stick guid>, <axis id>, <callback>[ ,<subscriber id>])```  
   **Multiple subscriptions to the same input are possible by supplying a different `Subscriber Id`**  
   The `Subscriber Id` parameter can be omitted for single-subscriber use
