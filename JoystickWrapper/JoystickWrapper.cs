@@ -53,7 +53,10 @@ namespace JWNameSpace
                 {
                     subscriptions[input] = new Dictionary<string, dynamic>(StringComparer.OrdinalIgnoreCase);
                 }
-                subscriptions[input].Add(id, handler);
+                if (subscriptions[input].ContainsKey(id))
+                    subscriptions[input][id] = handler;
+                else
+                    subscriptions[input].Add(id, handler);
             }
 
             public void Remove(int index, InputType inputType, string id = "0")
