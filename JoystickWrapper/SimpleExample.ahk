@@ -1,6 +1,6 @@
 #persistent
 #Include JoystickWrapper.ahk
-jw := new JoystickWrapper("bin\debug\JoystickWrapper.dll")
+jw := new JoystickWrapper("JoystickWrapper.dll")
 
 ;guid := "da2e2e00-19ea-11e6-8002-444553540000"
 

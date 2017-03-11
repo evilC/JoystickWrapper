@@ -6,7 +6,7 @@ Allows the user to subscribe to sticks and view the data coming from them
 */
 ;OutputDebug DBGVIEWCLEAR
 #Include JoystickWrapper.ahk
-jw := new JoystickWrapper("bin\debug\JoystickWrapper.dll")
+jw := new JoystickWrapper("JoystickWrapper.dll")
 
 GoSub, BuildGUI
 GoSub, Init
