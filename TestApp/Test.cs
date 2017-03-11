@@ -30,7 +30,7 @@ namespace TestApp
             {
                 Console.WriteLine("First Axis Value: " + value);
             });
-            jw.Subscribe(dev.Guid, JoystickWrapper.InputType.AXIS, 1, axisHandler);
+            jw.SubscribeAxis(dev.Guid, 1, axisHandler);
             //jw.SubscribeDev(devs[0].Axis.Last(), axisHandler);
 
             // Subscription #2 - Button 128
@@ -40,7 +40,7 @@ namespace TestApp
                 Console.WriteLine("First Button Value: " + value);
             });
 
-            jw.Subscribe(dev.Guid, JoystickWrapper.InputType.BUTTON, 1, buttonHandler);
+            jw.SubscribeButton(dev.Guid, 1, buttonHandler);
 
             // Subscription #3 - POV 4
             dynamic povHandler = new ExpandoObject();
@@ -49,7 +49,7 @@ namespace TestApp
                 Console.WriteLine("First POV Value: " + value);
             });
 
-            jw.Subscribe(dev.Guid, JoystickWrapper.InputType.POV, 1, povHandler);
+            jw.SubscribePov(dev.Guid, 1, povHandler);
 
         }
     }

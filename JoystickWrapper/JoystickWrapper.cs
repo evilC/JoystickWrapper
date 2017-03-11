@@ -57,6 +57,7 @@ namespace JWNameSpace
             }
         }
 
+        // Maps Axis / Button / POV numbers to Offset identidfiers
         public static Dictionary<InputType, List<JoystickOffset>> inputMappings = new Dictionary<InputType, List<JoystickOffset>>(){
             {
                 InputType.AXIS, new List<JoystickOffset>()
@@ -113,22 +114,29 @@ namespace JWNameSpace
         // For some reason the AHK code cannot access this Enum
         public enum InputType {AXIS, BUTTON, POV };
 
-        //public Dictionary<string, InputType> inputTypes = new Dictionary<string, InputType>(StringComparer.OrdinalIgnoreCase)
-        //{
-        //    {"AXIS", InputType.AXIS},
-        //    {"BUTTON", InputType.BUTTON},
-        //    {"POV", InputType.POV}
-        //};
-
-        public class InputTypes
+        // Reply for GetDevices()
+        public class DeviceInfo
         {
-            public InputType Axis { get { return InputType.AXIS; } }
-            public InputType Button { get { return InputType.BUTTON; } }
-            public InputType POV { get { return InputType.POV; } }
-        }
-        public InputTypes inputTypes = new InputTypes();
+            public int Axes { get; set; }
+            public int Buttons { get; set; }
+            public int POVs { get; set; }
 
-        // =================================================================================
+            public DeviceInfo(DeviceInstance deviceInstance)
+            {
+                var joystick = new Joystick(directInput, deviceInstance.InstanceGuid);
+                Axes = joystick.Capabilities.AxeCount;
+                Buttons = joystick.Capabilities.ButtonCount;
+                POVs = joystick.Capabilities.PovCount;
+
+                Name = deviceInstance.InstanceName;
+                Guid = deviceInstance.InstanceGuid.ToString();
+            }
+
+            public string Name { get; set; }
+            public string Guid { get; set; }
+        }
+
+        // ======================================= METHODS ==========================================
 
         public JoystickWrapper()
         {
@@ -136,13 +144,85 @@ namespace JWNameSpace
             MonitorSticks();
         }
 
+        // ============================ Endpoints ========================================
+
         /// <summary>
-        /// Adds a Subscription to an axis
+        /// Adds a Subscription to an Axis
         /// </summary>
         /// <param name="guidStr">Guid of the stick to subscribe to</param>
-        /// <param name="index">Name of the axis to subscribe to</param>
-        /// <param name="handler">Callback to fire when axis changes</param>
-        public void Subscribe(string guidStr, InputType inputType, int index, dynamic handler)
+        /// <param name="index">Number of the axis to subscribe to</param>
+        /// <param name="handler">Callback to fire when input changes</param>
+        public void SubscribeAxis(string guidStr, int index, dynamic handler)
+        {
+            Subscribe(guidStr, InputType.AXIS, index, handler);
+        }
+
+        /// <summary>
+        /// Adds a Subscription to a Button
+        /// </summary>
+        /// <param name="guidStr">Guid of the stick to subscribe to</param>
+        /// <param name="index">Button to subscribe to</param>
+        /// <param name="handler">Callback to fire when input changes</param>
+        public void SubscribeButton(string guidStr, int index, dynamic handler)
+        {
+            Subscribe(guidStr, InputType.BUTTON, index, handler);
+        }
+
+        /// <summary>
+        /// Adds a Subscription to a POV
+        /// </summary>
+        /// <param name="guidStr">Guid of the stick to subscribe to</param>
+        /// <param name="index">Number of the POV to subscribe to</param>
+        /// <param name="handler">Callback to fire when input changes</param>
+        public void SubscribePov(string guidStr, int index, dynamic handler)
+        {
+            Subscribe(guidStr, InputType.POV, index, handler);
+        }
+
+        // ToDo - remove. Monitor loop should start and stop automatically
+        public void Stop()
+        {
+            threadRunning = false;
+        }
+
+        // Gets a list of available devices and their caps
+        public DeviceInfo[] GetDevices()
+        {
+            var devices = directInput.GetDevices();
+            List<DeviceInfo> deviceList = new List<DeviceInfo>();
+            foreach (var deviceInstance in devices)
+            {
+                if (!IsStickType(deviceInstance))
+                    continue;
+                deviceList.Add(new DeviceInfo(deviceInstance));
+            }
+            return deviceList.ToArray();
+        }
+
+        public DeviceInfo GetDeviceByGuid(string guidStr)
+        {
+            var guid = new Guid(guidStr);
+            var devices = directInput.GetDevices();
+            foreach (var deviceInstance in devices)
+            {
+                if (!IsStickType(deviceInstance))
+                    continue;
+                if (deviceInstance.InstanceGuid == guid)
+                {
+                    return new DeviceInfo(deviceInstance);
+                }
+            }
+            return null;
+        }
+
+        // =============================== Internal ==================================
+
+        // Monitor thread.
+        // Watches any sticks that have been subscribed to
+        // Examines incoming events for subscribed sticks to see if any match subscribed inputs for that stick
+        // If any are found, fires the callback associated with the subscription
+
+        private void Subscribe(string guidStr, InputType inputType, int index, dynamic handler)
         {
             var guid = new Guid(guidStr);
             if (!subscribedSticks.ContainsKey(guid))
@@ -154,26 +234,8 @@ namespace JWNameSpace
             subscribedSticks[guid].Add(index, inputType, handler);
         }
 
-        //public void SubscribeDev(JoystickWrapper.JoystickInput input, dynamic handler)
-        //{
-        //    //var guid = new Guid(guidStr);
-        //    //var devinfo = input.parent;
-        //    //var guid = new Guid(devinfo.Guid);
-        //    var guid = new Guid("83f38eb0-7433-11e6-8007-444553540000");
-        //    if (!subscribedSticks.ContainsKey(guid))
-        //    {
-        //        subscribedSticks[guid] = new StickSubscriptions(guid);
-        //    }
-        //    var joystick = subscribedSticks[guid].joystick;
 
-        //    subscribedSticks[guid].Add(input.index, input.inputType, handler);
-        //}
-
-        // Monitor thread.
-        // Watches any sticks that have been subscribed to
-        // Examines incoming events for subscribed sticks to see if any match subscribed inputs for that stick
-        // If any are found, fires the callback associated with the subscription
-        public void MonitorSticks()
+        private void MonitorSticks()
         {
             var t = new Thread(new ThreadStart(() =>
             {
@@ -209,105 +271,13 @@ namespace JWNameSpace
             t.Start();
         }
 
-        public void Stop()
+        private bool IsStickType(DeviceInstance deviceInstance)
         {
-            threadRunning = false;
+            return deviceInstance.Type == DeviceType.Joystick
+                    || deviceInstance.Type == DeviceType.Gamepad
+                    || deviceInstance.Type == DeviceType.FirstPerson
+                    || deviceInstance.Type == DeviceType.Flight
+                    || deviceInstance.Type == DeviceType.Driving;
         }
-
-        public DeviceInfo[] GetDevices()
-        {
-            var devices = directInput.GetDevices();
-            List<DeviceInfo> deviceList = new List<DeviceInfo>();
-            foreach (var deviceInstance in devices)
-            {
-                if (deviceInstance.Type != DeviceType.Joystick
-                    && deviceInstance.Type != DeviceType.Gamepad
-                    && deviceInstance.Type != DeviceType.FirstPerson
-                    && deviceInstance.Type != DeviceType.Flight
-                    && deviceInstance.Type != DeviceType.Driving)
-                    continue;
-                deviceList.Add(new DeviceInfo(deviceInstance));
-            }
-            return deviceList.ToArray();
-        }
-
-        public DeviceInfo GetDeviceByGuid(string guidStr)
-        {
-            var guid = new Guid(guidStr);
-            var devices = directInput.GetDevices();
-            foreach (var deviceInstance in devices)
-            {
-                if (deviceInstance.Type != DeviceType.Joystick
-                    && deviceInstance.Type != DeviceType.Gamepad
-                    && deviceInstance.Type != DeviceType.FirstPerson
-                    && deviceInstance.Type != DeviceType.Flight
-                    && deviceInstance.Type != DeviceType.Driving)
-                    continue;
-                if (deviceInstance.InstanceGuid == guid)
-                {
-                    return new DeviceInfo(deviceInstance);
-                }
-            }
-            return null;
-        }
-
-        // Reply for GetDevices()
-        public class DeviceInfo
-        {
-            //public SharpDX.DirectInput.Capabilities caps { get; set; }
-            //public Dictionary<string, int> caps = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-            //public List<JoystickInput> Axis = new List<JoystickInput>();
-            public JoystickInput[] Axis;
-            public List<JoystickInput> Button = new List<JoystickInput>();
-            public List<JoystickInput> POV = new List<JoystickInput>();
-
-            //public JoystickCaps caps = new JoystickCaps();
-            public DeviceInfo(DeviceInstance deviceInstance)
-            {
-                var joystick = new Joystick(directInput, deviceInstance.InstanceGuid);
-                var axes = new List<JoystickInput>();
-                for (var i = 0; i <= joystick.Capabilities.AxeCount; i++)
-                {
-                    axes.Add(new JoystickInput(this, InputType.AXIS, i));
-                    Axis = axes.ToArray();
-                }
-                for (var i = 0; i <= joystick.Capabilities.ButtonCount; i++)
-                {
-                    Button.Add(new JoystickInput(this, InputType.BUTTON, i));
-                }
-                for (var i = 0; i <= joystick.Capabilities.PovCount; i++)
-                {
-                    POV.Add(new JoystickInput(this, InputType.POV, i));
-                }
-
-                Name = deviceInstance.InstanceName;
-                Guid = deviceInstance.InstanceGuid.ToString();
-            }
-
-            public string Name { get; set; }
-            public string Guid { get; set; }
-        }
-
-        public class JoystickInput
-        {
-            public DeviceInfo parent { get; set; }
-            public InputType inputType { get; set; }
-            public int index { get; set; }
-
-            public JoystickInput(DeviceInfo parentDevice, InputType iType, int i)
-            {
-                index = i;
-                parent = parentDevice;
-                inputType = iType;
-            }
-        }
-
-        //public class JoystickCaps
-        //{
-        //    public int Axes { get; set; }
-        //    public int Buttons { get; set; }
-        //    public int POVs { get; set; }
-        //}
-
     }
 }

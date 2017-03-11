@@ -4,33 +4,26 @@ JoystickWrapper Test script for AHK
 Loads the JoystickWrapper DLL via CLR
 Allows the user to subscribe to sticks and view the data coming from them
 */
+;guid := "da2e2e00-19ea-11e6-8002-444553540000"
 
 ; Include Lexikos' CLR library
 #include CLR.ahk
 OutputDebug DBGVIEWCLEAR
 
+selected_device := 0
+AxisList := ["X", "Y", "Z", "Rx", "Ry", "Rz", "S0", "S1"]
+
 GoSub, BuildGUI
-;~ ; Load the C# DLL
-;~ asm := CLR_LoadLibrary("bin\debug\JoystickWrapper.dll")
-;~ ; Use CLR to instantiate a class from within the DLL
-;~ jw := asm.CreateInstance("JWNameSpace.JoystickWrapper")
 
 jw := new JoystickWrapper("bin\debug\JoystickWrapper.dll")
-guid := jw.GetAnyDeviceGuid()
-;guid := "da2e2e00-19ea-11e6-8002-444553540000"
-jw.Subscribe(guid, jw.InputTypes.Axis, 1, Func("TestFunc").Bind("X"))
-jw.Subscribe(guid, jw.InputTypes.Axis, 2, Func("TestFunc").Bind("Y"))
-jw.Subscribe(guid, jw.InputTypes.Axis, 3, Func("TestFunc").Bind("Z"))
-jw.Subscribe(guid, jw.InputTypes.Axis, 4, Func("TestFunc").Bind("Rx"))
-jw.Subscribe(guid, jw.InputTypes.Axis, 5, Func("TestFunc").Bind("Ry"))
-jw.Subscribe(guid, jw.InputTypes.Axis, 6, Func("TestFunc").Bind("Rz"))
-jw.Subscribe(guid, jw.InputTypes.Axis, 7, Func("TestFunc").Bind("S0"))
-jw.Subscribe(guid, jw.InputTypes.Axis, 8, Func("TestFunc").Bind("S1"))
-;GoSub, Init
+GoSub, Init
 return
 
-TestFunc(axis, value){
-	ToolTip % "Axis: " axis ", value: " value
+TestFunc(device, input, value){
+	global hDeviceReports
+	Gui, ListView, % hDeviceReports
+	row := LV_Add(, device, input, value)
+	LV_Modify(row, "Vis")
 }
 
 class JoystickWrapper {
@@ -40,11 +33,18 @@ class JoystickWrapper {
 		asm := CLR_LoadLibrary(dllpath)
 		; Use CLR to instantiate a class from within the DLL
 		this.Interface := asm.CreateInstance("JWNameSpace.JoystickWrapper")
-		this.InputTypes := this.Interface.inputTypes
 	}
 	
-	Subscribe(guid, type, index, callback){
-		this.Interface.Subscribe(guid, type, index, new this.Handler(callback))
+	SubscribeAxis(guid, index, callback){
+		this.Interface.SubscribeAxis(guid, index, new this.Handler(callback))
+	}
+	
+	SubscribeButton(guid, index, callback){
+		this.Interface.SubscribeButton(guid, index, new this.Handler(callback))
+	}
+	
+	SubscribePov(guid, index, callback){
+		this.Interface.SubscribePov(guid, index, new this.Handler(callback))
 	}
 	
 	GetDevices(){
@@ -53,7 +53,7 @@ class JoystickWrapper {
 		ct := _device_list.MaxIndex()+1
 		Loop % ct {
 			dev := _device_list[A_Index - 1]
-			device_list[dev.Guid] := dev.Name
+			device_list[dev.Guid] := { Name: dev.Name, Guid: dev.Guid, Axes: dev.Axes, Buttons: dev.Buttons, POVs: dev.POVs}
 		}
 		return device_list
 	}
@@ -78,46 +78,21 @@ class JoystickWrapper {
 	}
 }
 
-;~ ; Called whenever a joystick changes
-;~ class Handler
-;~ {
-	;~ __New(guid, axis){
-		;~ this.guid := guid
-		;~ this.axis := axis
-	;~ }
-	
-    ;~ Handle(value)
-    ;~ {
-		;~ msgbox
-		global hDeviceReports, device_list
-		Gui, ListView, % hDeviceReports
-		row := LV_Add(, this.guid, this.axis, value)
-		LV_Modify(row, "vis")
-    ;~ }
-;~ }
-
-; Gui handling code =================================
-
 BuildGUI:
 	; Set up GUI for demo
 	Gui, Add, ListView, w300 h100 Checked hwndhDeviceSelect gDeviceSelected Altsubmit, Name|Guid
 	LV_ModifyCol(1, 200)
 	Gui, Add, ListView, w300 h300 hwndhDeviceReports, Device|Input|Value
-	LV_ModifyCol(1, 100)
-	LV_ModifyCol(2, 130)
+	LV_ModifyCol(1, 175)
+	LV_ModifyCol(2, 60)
 	Gui, Show, x0 y0
 	return
 
 Init:
-	polled_guids := 0
-	device_list := {}
+	device_list := jw.GetDevices()
 	Gui, ListView, % hDeviceSelect
-	_device_list := jw.GetDevices()
-	ct := _device_list.MaxIndex()+1
-	Loop % ct {
-		dev := _device_list[A_Index - 1]
-		LV_Add(, dev.Name, dev.Guid)
-		device_list[dev.Guid] := dev.Name
+	for guid, device in device_list {
+		LV_Add(, device.Name, device.Guid)
 	}
 	return
 
@@ -129,34 +104,21 @@ DeviceSelected:
     if (ErrorLevel = "c"){
         ; Check / Uncheck
         state := ErrorLevel == "C" ? 1 : 0
-        LV_GetText(guid, A_EventInfo, 2)
+        LV_GetText(selected_device, A_EventInfo, 2)
         if (state){
-            if (!IsObject(polled_guids))
-                polled_guids := {}
-            polled_guids[guid] := 1
-			; ToDo: Implement capability detection and axis selection
-			;jw.Subscribe(guid, jw.InputType.AXIS, 1, new Handler(guid, "Axis X"))	; Why can I not access the enum?
-			;~ jw.SubscribeDev(dev.Axis[1], new Handler(guid, "Axis X"))
-			jw.Subscribe(guid, jw.inputTypes.Axis, 8, new Handler(guid, "Axis 8"))
-			jw.Subscribe(guid, jw.inputTypes.Button, 128, new Handler(guid, "Button 128"))
-			jw.Subscribe(guid, jw.inputTypes.POV, 4, new Handler(guid, "POV 4"))
-        } else {
-            if (ObjHasKey(polled_guids, guid)){
-                polled_guids.Delete(guid)
-                if (IsEmptyAssoc(polled_guids)){
-                    polled_guids := 0
-					jw.Stop()
-				}
-            }
+			dev := device_list[selected_device]
+			Loop % dev.Axes {
+				jw.SubscribeAxis(selected_device, A_Index, Func("TestFunc").Bind(dev.Name, AxisList[A_Index] " Axis"))
+			}
+			Loop % dev.Buttons {
+				jw.SubscribeButton(selected_device, A_Index, Func("TestFunc").Bind(dev.Name, "Button " A_Index))
+			}
+			Loop % dev.POVs {
+				jw.SubscribePov(selected_device, A_Index, Func("TestFunc").Bind(dev.Name, " POV " A_Index))
+			}
         }
     }
     return
-
-IsEmptyAssoc(arr){
-    for k, v in arr
-        return 0
-    return 1
-}
 
 ^Esc::
 GuiClose:
