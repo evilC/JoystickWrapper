@@ -1,11 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Diagnostics;
 
 using JWNameSpace;
-using System.Dynamic;
+using System.Threading;
 
 // App to test JoystickWrapper's functionality just using C#, so you can debug in VS etc
 namespace TestApp
@@ -14,6 +11,7 @@ namespace TestApp
     {
         static void Main(string[] args)
         {
+            Debug.WriteLine("DBGVIEWCLEAR");
             var jw = new JoystickWrapper();
 
             var devs = jw.GetDevices();
@@ -36,9 +34,13 @@ namespace TestApp
                 Console.WriteLine("POV Value: " + value);
             });
 
+            //// Test
             //jw.SubscribeAxis(dev.Guid, 1, axisHandler, "LV1");
             //jw.SubscribeAxis(dev.Guid, 1, axisHandler, "LV1");
+            //Thread.Sleep(1000);
             //jw.UnSubscribeAxis(dev.Guid, 1, "LV1");
+            //Thread.Sleep(1000);
+            //jw.SubscribeAxis(dev.Guid, 1, axisHandler, "LV1");
 
             // Demo - three subscriptions requested
             // Subscription #1 - Axis 1 (X)

@@ -46,7 +46,7 @@ namespace JWNameSpace
                 joystick.Acquire();
             }
 
-            public void Add(int index, InputType inputType, dynamic handler, string id = "0")
+            public bool Add(int index, InputType inputType, dynamic handler, string id = "0")
             {
                 var input = inputMappings[inputType][index-1];
                 if (!subscriptions.ContainsKey(input))
@@ -57,15 +57,24 @@ namespace JWNameSpace
                     subscriptions[input][id] = handler;
                 else
                     subscriptions[input].Add(id, handler);
+                return true;
             }
 
-            public void Remove(int index, InputType inputType, string id = "0")
+            public bool Remove(int index, InputType inputType, string id = "0")
             {
                 var input = inputMappings[inputType][index - 1];
                 if (subscriptions.ContainsKey(input))
                 {
                     subscriptions[input].Remove(id);
+                    foreach (var subscription in subscriptions)
+                    {
+                        if (subscription.Value.Count != 0)
+                            return true;
+                    }
+                    subscriptions.Clear();
+                    return true;
                 }
+                return false;
             }
         }
 
@@ -153,7 +162,6 @@ namespace JWNameSpace
         public JoystickWrapper()
         {
             directInput = new DirectInput();
-            MonitorSticks();
         }
 
         // ============================ Endpoints ========================================
@@ -165,14 +173,14 @@ namespace JWNameSpace
         /// <param name="index">Number of the axis to subscribe to</param>
         /// <param name="handler">Callback to fire when input changes</param>
         /// <param name="id">ID of the subscriber. Can be left blank if you do not wish to allow multiple subscriptions to the same input</param>
-        public void SubscribeAxis(string guidStr, int index, dynamic handler, string id = "0")
+        public bool SubscribeAxis(string guidStr, int index, dynamic handler, string id = "0")
         {
-            Subscribe(guidStr, InputType.AXIS, index, handler, id);
+            return Subscribe(guidStr, InputType.AXIS, index, handler, id);
         }
 
-        public void UnSubscribeAxis(string guidStr, int index, string id = "0")
+        public bool UnSubscribeAxis(string guidStr, int index, string id = "0")
         {
-            UnSubscribe(guidStr, InputType.AXIS, index, id);
+            return UnSubscribe(guidStr, InputType.AXIS, index, id);
         }
 
         /// <summary>
@@ -182,14 +190,14 @@ namespace JWNameSpace
         /// <param name="index">Button to subscribe to</param>
         /// <param name="handler">Callback to fire when input changes</param>
         /// <param name="id">ID of the subscriber. Can be left blank if you do not wish to allow multiple subscriptions to the same input</param>
-        public void SubscribeButton(string guidStr, int index, dynamic handler, string id = "0")
+        public bool SubscribeButton(string guidStr, int index, dynamic handler, string id = "0")
         {
-            Subscribe(guidStr, InputType.BUTTON, index, handler, id);
+            return Subscribe(guidStr, InputType.BUTTON, index, handler, id);
         }
 
-        public void UnSubscribeButton(string guidStr, int index, string id = "0")
+        public bool UnSubscribeButton(string guidStr, int index, string id = "0")
         {
-            UnSubscribe(guidStr, InputType.BUTTON, index, id);
+            return UnSubscribe(guidStr, InputType.BUTTON, index, id);
         }
 
         /// <summary>
@@ -199,20 +207,14 @@ namespace JWNameSpace
         /// <param name="index">Number of the POV to subscribe to</param>
         /// <param name="handler">Callback to fire when input changes</param>
         /// <param name="id">ID of the subscriber. Can be left blank if you do not wish to allow multiple subscriptions to the same input</param>
-        public void SubscribePov(string guidStr, int index, dynamic handler, string id = "0")
+        public bool SubscribePov(string guidStr, int index, dynamic handler, string id = "0")
         {
-            Subscribe(guidStr, InputType.POV, index, handler, id);
+            return Subscribe(guidStr, InputType.POV, index, handler, id);
         }
 
-        public void UnSubscribePov(string guidStr, int index, string id = "0")
+        public bool UnSubscribePov(string guidStr, int index, string id = "0")
         {
-            UnSubscribe(guidStr, InputType.POV, index, id);
-        }
-
-        // ToDo - remove. Monitor loop should start and stop automatically
-        public void Stop()
-        {
-            threadRunning = false;
+            return UnSubscribe(guidStr, InputType.POV, index, id);
         }
 
         // Gets a list of available devices and their caps
@@ -252,37 +254,53 @@ namespace JWNameSpace
         // Examines incoming events for subscribed sticks to see if any match subscribed inputs for that stick
         // If any are found, fires the callback associated with the subscription
 
-        private void Subscribe(string guidStr, InputType inputType, int index, dynamic handler, string id = "0")
+        private bool Subscribe(string guidStr, InputType inputType, int index, dynamic handler, string id = "0")
         {
             var guid = new Guid(guidStr);
             if (!subscribedSticks.ContainsKey(guid))
             {
                 subscribedSticks[guid] = new StickSubscriptions(guid);
             }
-            //var joystick = subscribedSticks[guid].joystick;
-
-            subscribedSticks[guid].Add(index, inputType, handler, id);
+            if (subscribedSticks[guid].Add(index, inputType, handler, id))
+            {
+                SetMonitorState();
+                return true;
+            }
+            return false;
         }
 
-        private void UnSubscribe(string guidStr, InputType inputType, int index, string id = "0")
+        private bool UnSubscribe(string guidStr, InputType inputType, int index, string id = "0")
         {
             var guid = new Guid(guidStr);
-            //if (subscribedSticks.ContainsKey(guid))
-            //{
-            //    //subscribedSticks.Remove(guid);
-            //    //subscribedSticks[guid] = new StickSubscriptions(guid);
-            //}
-            ////var joystick = subscribedSticks[guid].joystick;
-
-            subscribedSticks[guid].Remove(index, inputType, id);
+            if (subscribedSticks.ContainsKey(guid))
+            {
+                if (subscribedSticks[guid].Remove(index, inputType, id))
+                {
+                    if (subscribedSticks[guid].subscriptions.Count == 0)
+                    {
+                        subscribedSticks.Remove(guid);
+                    }
+                    SetMonitorState();
+                    return true;
+                }
+            }
+            return false;
         }
 
+        private void SetMonitorState()
+        {
+            if (threadRunning && subscribedSticks.Count == 0)
+                threadRunning = false;
+            else if (!threadRunning && subscribedSticks.Count > 0)
+                MonitorSticks();
+        }
 
         private void MonitorSticks()
         {
             var t = new Thread(new ThreadStart(() =>
             {
                 threadRunning = true;
+                //Debug.WriteLine("JoystickWrapper| MonitorSticks starting");
                 while (threadRunning)
                 {
                     // Iterate subscribed sticks
@@ -310,6 +328,7 @@ namespace JWNameSpace
                     }
                     Thread.Sleep(1);
                 }
+                //Debug.WriteLine("JoystickWrapper| MonitorSticks stopping");
             }));
             t.Start();
         }
