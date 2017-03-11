@@ -36,7 +36,8 @@ There is also a DirectX wrapper for C# called [SharpDX ](http://sharpdx.org/) wh
   2. Instantiate AHK `JoystickWrapper` class, passing it the path to the DLL  
   ```jw := new JoystickWrapper("JoystickWrapper.dll")```
   3. You may now subscribe to inputs, eg using  
-  ```jw.SubscribeAxis(<stick guid>, <axis id>, <callback>[ ,<subscriber id>)```  
+  ```jw.SubscribeAxis(<stick guid>, <axis id>, <callback>[ ,<subscriber id>)``` 
+  Multiple subscriptions to the same input are possible by supplying a different `Subscriber Id`
 
 For more info, see the demo AHK scripts in the JoystickWrapper folder.  
 
