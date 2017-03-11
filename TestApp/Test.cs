@@ -36,19 +36,19 @@ namespace TestApp
                 Console.WriteLine("POV Value: " + value);
             });
 
-            jw.SubscribeAxis(dev.Guid, 1, axisHandler, "LV1");
-            jw.SubscribeAxis(dev.Guid, 1, axisHandler, "LV1");
+            //jw.SubscribeAxis(dev.Guid, 1, axisHandler, "LV1");
+            //jw.SubscribeAxis(dev.Guid, 1, axisHandler, "LV1");
             //jw.UnSubscribeAxis(dev.Guid, 1, "LV1");
 
-            //// Demo - three subscriptions requested
-            //// Subscription #1 - Axis 1 (X)
-            //jw.SubscribeAxis(dev.Guid, 1, axisHandler, "LV1");
+            // Demo - three subscriptions requested
+            // Subscription #1 - Axis 1 (X)
+            jw.SubscribeAxis(dev.Guid, 1, axisHandler, "LV1");
 
-            //// Subscription #2 - Button 128
-            //jw.SubscribeButton(dev.Guid, 1, buttonHandler);
+            // Subscription #2 - Button 128
+            jw.SubscribeButton(dev.Guid, 1, buttonHandler, "LV1");
 
-            //// Subscription #3 - POV 4
-            //jw.SubscribePov(dev.Guid, 1, povHandler);
+            // Subscription #3 - POV 4
+            jw.SubscribePov(dev.Guid, 1, povHandler, "LV1");
         }
     }
 }
