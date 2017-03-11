@@ -30,19 +30,15 @@ Lexikos has released some really great stuff recently, one of which being his [C
 At the time of writing, I am starting a career in automated test using C#, so I thought it would be a good idea to work with it in my spare time.  
 There is also a DirectX wrapper for C# called [SharpDX ](http://sharpdx.org/) which allows easy reading of sticks in C#, so over the course of a weeked I sat down and knocked up a POC for reading sticks in AHK via DirectX.  
 
-##How?
-  1. You load the C# JoystickWrapper DLL from AutoHotkey, using Lexikos' CLR library.  
-  ```asm := CLR_LoadLibrary("JoystickWrapper.dll")```
-  2. You then instantiate the `JoystickWrapper` class from the DLL, again using CLR  
-  ```jw := asm.CreateInstance("JWNameSpace.JoystickWrapper")```
+##How do I use it in AutoHotkey?
+  1. Include the JoystickWrapper library  
+  ```#include JoystickWrapper.ahk```
+  2. Instantiate AHK `JoystickWrapper` class, passing it the path to the DLL  
+  ```jw := new JoystickWrapper("JoystickWrapper.dll")```
+  3. You may now subscribe to inputs, eg using  
+  ```jw.SubscribeAxis(<stick guid>, <axis id>, <callback>[ ,<subscriber id>)```  
 
-You can then call methods from the class as if `jw` were a regular AHK class.  
-eg to call `JoystickWrapper.GetDevices()` from the DLL, just do `jw.GetDevices()`  
-Return objects are COM objects, so be aware that:  
-  * Arrays are zero-based.
-  * To get the max index of an array, use `var.MaxIndex()` not the regular AHK `var.Length()`  
-
-For more info, see the demo AHK script in the JoystickWrapper folder.  
+For more info, see the demo AHK scripts in the JoystickWrapper folder.  
 
 ##Goals
 ###Must Have
