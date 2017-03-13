@@ -378,7 +378,7 @@ namespace JWNameSpace
                 else
                 {
                     // Pov Direction Mapping
-                    //if (povDirection < 1 || povDirection > 8)
+                    //if (povDirection < 1 || povDirection > 4)
                     //{
                     //    return /*false*/;
                     //}
@@ -441,7 +441,7 @@ namespace JWNameSpace
         // Handles storing subscriptions for (and processing input of) a specific direction of a POV on a specific joystick
         private class SubscribedPovDirection
         {
-            public int Direction { get; set; }      // Setting: The Direction Mapped to. A number from 1-8
+            public int Direction { get; set; }      // Setting: The Direction Mapped to. A number from 1-4 N/E/S/W
             public int Tolerance { get; set; }      // Setting: How many degrees either side of angle to consider a match
             private int Angle { get; set; }         // PreCalculation: The angle as reported by DirectX (0..36000) that the Direction maps to
             private int Min { get; set; }           // PreCalculation: The minimum angle to consider "pressed" (May contain negative value if Angle is close to 0)
@@ -455,7 +455,7 @@ namespace JWNameSpace
                 State = false;
                 // Pre-calculate values, so we do less work each tick of the Monitor thread
                 Tolerance = 90; // Hard-code tolerance for now - allow configuring at some point. Tolerance setting is same for all bindings though.
-                Angle = (povDirection - 1) * 4500;    // convert 8-way to degrees
+                Angle = (povDirection - 1) * 9000;    // convert 4-way to degrees
                 int tolAdjustment = (Tolerance / 2) * 100;
                 Min = Angle - tolAdjustment;
                 Max = Angle + tolAdjustment;
