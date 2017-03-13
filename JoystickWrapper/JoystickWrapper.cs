@@ -10,73 +10,182 @@ namespace JWNameSpace
     public class JoystickWrapper
     {
         static private DirectInput directInput;
-        public bool threadRunning = false;
+        public SubscribedSticks stickSubscriptions = new SubscribedSticks();
 
-        // A list of stick subscriptions, indexed by Guid
-        public Dictionary<Guid, StickSubscriptions> subscribedSticks = new Dictionary<Guid, StickSubscriptions>();
-
-        // Handles the subscriptions for a specific stick
-        // Multiple subscriptions to the same input are possible
-        // ToDo - Give each subscription a UID, so it can be removed.
-        public class StickSubscriptions
+        // Keeps a record of which sticks are subscribed to
+        public class SubscribedSticks
         {
-            public Joystick joystick { get; set; }
-            //The SharpDX.DirectInput.JoystickOffset property from a joystick report identifies the button or axis that the data came from
-            public Dictionary<JoystickOffset, Dictionary<string, dynamic>> subscriptions = new Dictionary<JoystickOffset, Dictionary<string, dynamic>>();
+            public Dictionary<Guid, SubscribedStick> Sticks { get; set; }
+            public bool threadRunning = false;
 
-            public StickSubscriptions(Guid guid)
+            public SubscribedSticks()
             {
+                Sticks = new Dictionary<Guid, SubscribedStick>();
+            }
+
+            public void Add(string guidStr, JoystickOffset offset, dynamic handler, string id)
+            {
+                Guid guid = new Guid(guidStr);
+                if (!Sticks.ContainsKey(guid))
+                {
+                    Sticks.Add(guid, new SubscribedStick(guid));
+                }
+                Sticks[guid].Add(offset, handler, id);
+                SetMonitorState();
+            }
+
+            public bool Remove(string guidStr, JoystickOffset offset, string id)
+            {
+                Guid guid = new Guid(guidStr);
+                if (!Sticks.ContainsKey(guid))
+                {
+                    return false;
+                }
+                Sticks[guid].Remove(offset, id);
+                if (Sticks[guid].Inputs.Count == 0)
+                {
+                    Sticks.Remove(guid);
+                    SetMonitorState();
+                }
+                return true;
+            }
+
+            private void SetMonitorState()
+            {
+                if (threadRunning && Sticks.Count == 0)
+                    threadRunning = false;
+                else if (!threadRunning && Sticks.Count > 0)
+                    MonitorSticks();
+            }
+
+            private void MonitorSticks()
+            {
+                var t = new Thread(new ThreadStart(() =>
+                {
+                    threadRunning = true;
+                    //Debug.WriteLine("JoystickWrapper| MonitorSticks starting");
+                    while (threadRunning)
+                    {
+                        // Iterate subscribed sticks
+                        foreach (var subscribedStick in Sticks.Values)
+                        {
+                            subscribedStick.Poll();
+                        }
+                        Thread.Sleep(1);
+                    }
+                    //Debug.WriteLine("JoystickWrapper| MonitorSticks stopping");
+                }));
+                t.Start();
+            }
+        }
+
+        // For a given stick, keeps a record of which inputs are subscribed to
+        public class SubscribedStick
+        {
+            public Dictionary<JoystickOffset, SubscribedInput> Inputs { get; set; }
+            private Joystick joystick;
+
+            public SubscribedStick(Guid guid)
+            {
+                Inputs = new Dictionary<JoystickOffset, SubscribedInput>();
                 joystick = new Joystick(directInput, guid);
-                var caps = joystick.Capabilities;
-
-                // Build subscription arrays according to capabilities
-                for (var i = 1; i <= caps.AxeCount; i++)
-                {
-                    subscriptions.Add(inputMappings[InputType.AXIS][i - 1], new Dictionary<string, dynamic>(StringComparer.OrdinalIgnoreCase));
-                }
-
-                for (var i = 1; i <= caps.ButtonCount; i++)
-                {
-                    subscriptions.Add(inputMappings[InputType.BUTTON][i - 1], new Dictionary<string, dynamic>(StringComparer.OrdinalIgnoreCase));
-                }
-
                 // Set BufferSize in order to use buffered data.
                 joystick.Properties.BufferSize = 128;
 
                 joystick.Acquire();
             }
 
-            public bool Add(int index, InputType inputType, dynamic handler, string id = "0")
+            public void Add(JoystickOffset offset, dynamic handler, string id)
             {
-                var input = inputMappings[inputType][index-1];
-                if (!subscriptions.ContainsKey(input))
+                if (!Inputs.ContainsKey(offset))
                 {
-                    subscriptions[input] = new Dictionary<string, dynamic>(StringComparer.OrdinalIgnoreCase);
+                    Inputs.Add(offset, new SubscribedInput());
                 }
-                if (subscriptions[input].ContainsKey(id))
-                    subscriptions[input][id] = handler;
-                else
-                    subscriptions[input].Add(id, handler);
+                Inputs[offset].Add(handler, id);
+            }
+
+            public bool Remove(JoystickOffset offset, string id)
+            {
+                if (!Inputs.ContainsKey(offset))
+                {
+                    return false;
+                }
+                Inputs[offset].Remove(id);
+                if (Inputs[offset].Subscriptions.Count == 0)
+                {
+                    Inputs.Remove(offset);
+                }
                 return true;
             }
 
-            public bool Remove(int index, InputType inputType, string id = "0")
-            {
-                var input = inputMappings[inputType][index - 1];
-                if (subscriptions.ContainsKey(input))
+            public void Poll(){
+                joystick.Poll();
+                var data = joystick.GetBufferedData();
+                // Iterate each report
+                foreach (var state in data)
                 {
-                    subscriptions[input].Remove(id);
-                    foreach (var subscription in subscriptions)
+                    if (Inputs.ContainsKey(state.Offset))
                     {
-                        if (subscription.Value.Count != 0)
-                            return true;
+                        Inputs[state.Offset].ProcessPollRecord(state.Value);
                     }
-                    subscriptions.Clear();
-                    return true;
                 }
-                return false;
+            }
+
+        }
+
+        // For a given input, maintains a list of Subscribers that wish to be notified when the input changes
+        public class SubscribedInput
+        {
+            public SubscribedInput()
+            {
+                Subscriptions = new Dictionary<string, Subscription>(StringComparer.OrdinalIgnoreCase);
+            }
+            public Dictionary<string, Subscription> Subscriptions { get; set; }
+
+            public void Add(dynamic handler, string subscriberID)
+            {
+                if (Subscriptions.ContainsKey(subscriberID))
+                {
+                    Subscriptions[subscriberID].Callback = handler;
+                }
+                else
+                {
+                    Subscriptions.Add(subscriberID, new Subscription(handler));
+                }
+            }
+
+            public bool Remove(string subscriberID)
+            {
+                if (!Subscriptions.ContainsKey(subscriberID))
+                {
+                    return false;
+                }
+                Subscriptions.Remove(subscriberID);
+                return true;
+            }
+
+            public void ProcessPollRecord(int value)
+            {
+                foreach (var sub in Subscriptions)
+                {
+                    sub.Value.Callback(value);
+                }
             }
         }
+
+        // Holds information on a given subscription
+        public class Subscription
+        {
+            public dynamic Callback { get; set; }
+
+            public Subscription(dynamic callback)
+            {
+                Callback = callback;
+            }
+        }
+
+        // For some reason the AHK code cannot access this Enum
+        public enum InputType { AXIS, BUTTON, POV };
 
         // Maps Axis / Button / POV numbers to Offset identidfiers
         public static Dictionary<InputType, List<JoystickOffset>> inputMappings = new Dictionary<InputType, List<JoystickOffset>>(){
@@ -132,9 +241,6 @@ namespace JWNameSpace
             }
         };
 
-        // For some reason the AHK code cannot access this Enum
-        public enum InputType {AXIS, BUTTON, POV };
-
         // Reply for GetDevices()
         public class DeviceInfo
         {
@@ -157,64 +263,50 @@ namespace JWNameSpace
             public string Guid { get; set; }
         }
 
-        // ======================================= METHODS ==========================================
+        // ================================ Publicly Exposed Methods =====================================
 
+        // Constructor
         public JoystickWrapper()
         {
             directInput = new DirectInput();
         }
 
-        // ============================ Endpoints ========================================
 
-        /// <summary>
-        /// Adds a Subscription to an Axis
-        /// </summary>
-        /// <param name="guidStr">Guid of the stick to subscribe to</param>
-        /// <param name="index">Number of the axis to subscribe to</param>
-        /// <param name="handler">Callback to fire when input changes</param>
-        /// <param name="id">ID of the subscriber. Can be left blank if you do not wish to allow multiple subscriptions to the same input</param>
-        public bool SubscribeAxis(string guidStr, int index, dynamic handler, string id = "0")
+        // Subscribe / Unsubscribe methods
+        public void SubscribeAxis(string guid, int index, dynamic handler, string id = "0")
         {
-            return Subscribe(guidStr, InputType.AXIS, index, handler, id);
+            var offset = inputMappings[InputType.AXIS][index - 1];
+            Subscribe(guid, offset, handler, id);
         }
 
-        public bool UnSubscribeAxis(string guidStr, int index, string id = "0")
+        public void UnSubscribeAxis(string guid, int index, string id = "0")
         {
-            return UnSubscribe(guidStr, InputType.AXIS, index, id);
+            var offset = inputMappings[InputType.AXIS][index - 1];
+            UnSubscribe(guid, offset, id);
         }
 
-        /// <summary>
-        /// Adds a Subscription to a Button
-        /// </summary>
-        /// <param name="guidStr">Guid of the stick to subscribe to</param>
-        /// <param name="index">Button to subscribe to</param>
-        /// <param name="handler">Callback to fire when input changes</param>
-        /// <param name="id">ID of the subscriber. Can be left blank if you do not wish to allow multiple subscriptions to the same input</param>
-        public bool SubscribeButton(string guidStr, int index, dynamic handler, string id = "0")
+        public void SubscribeButton(string guid, int index, dynamic handler, string id = "0")
         {
-            return Subscribe(guidStr, InputType.BUTTON, index, handler, id);
+            var offset = inputMappings[InputType.BUTTON][index - 1];
+            Subscribe(guid, offset, handler, id);
         }
 
-        public bool UnSubscribeButton(string guidStr, int index, string id = "0")
+        public void UnSubscribeButton(string guid, int index, string id = "0")
         {
-            return UnSubscribe(guidStr, InputType.BUTTON, index, id);
+            var offset = inputMappings[InputType.BUTTON][index - 1];
+            UnSubscribe(guid, offset, id);
         }
 
-        /// <summary>
-        /// Adds a Subscription to a POV
-        /// </summary>
-        /// <param name="guidStr">Guid of the stick to subscribe to</param>
-        /// <param name="index">Number of the POV to subscribe to</param>
-        /// <param name="handler">Callback to fire when input changes</param>
-        /// <param name="id">ID of the subscriber. Can be left blank if you do not wish to allow multiple subscriptions to the same input</param>
-        public bool SubscribePov(string guidStr, int index, dynamic handler, string id = "0")
+        public void SubscribePov(string guid, int index, dynamic handler, string id = "0")
         {
-            return Subscribe(guidStr, InputType.POV, index, handler, id);
+            var offset = inputMappings[InputType.POV][index - 1];
+            Subscribe(guid, offset, handler, id);
         }
 
-        public bool UnSubscribePov(string guidStr, int index, string id = "0")
+        public void UnSubscribePov(string guid, int index, string id = "0")
         {
-            return UnSubscribe(guidStr, InputType.POV, index, id);
+            var offset = inputMappings[InputType.POV][index - 1];
+            UnSubscribe(guid, offset, id);
         }
 
         // Gets a list of available devices and their caps
@@ -247,91 +339,27 @@ namespace JWNameSpace
             return null;
         }
 
-        // =============================== Internal ==================================
-
-        // Monitor thread.
-        // Watches any sticks that have been subscribed to
-        // Examines incoming events for subscribed sticks to see if any match subscribed inputs for that stick
-        // If any are found, fires the callback associated with the subscription
-
-        private bool Subscribe(string guidStr, InputType inputType, int index, dynamic handler, string id = "0")
+        public string GetAnyDeviceGuid()
         {
-            var guid = new Guid(guidStr);
-            if (!subscribedSticks.ContainsKey(guid))
+            var devices = directInput.GetDevices();
+            foreach (var deviceInstance in devices)
             {
-                subscribedSticks[guid] = new StickSubscriptions(guid);
+                if (!IsStickType(deviceInstance))
+                    continue;
+                return deviceInstance.InstanceGuid.ToString();
             }
-            if (subscribedSticks[guid].Add(index, inputType, handler, id))
-            {
-                SetMonitorState();
-                return true;
-            }
-            return false;
+            return "";
         }
 
-        private bool UnSubscribe(string guidStr, InputType inputType, int index, string id = "0")
+        // =========================== Internal Methods ==========================================
+        private void Subscribe(string guid, JoystickOffset offset, dynamic handler, string id = "0")
         {
-            var guid = new Guid(guidStr);
-            if (subscribedSticks.ContainsKey(guid))
-            {
-                if (subscribedSticks[guid].Remove(index, inputType, id))
-                {
-                    if (subscribedSticks[guid].subscriptions.Count == 0)
-                    {
-                        subscribedSticks.Remove(guid);
-                    }
-                    SetMonitorState();
-                    return true;
-                }
-            }
-            return false;
+            stickSubscriptions.Add(guid, offset, handler, id);
         }
 
-        private void SetMonitorState()
+        private void UnSubscribe(string guid, JoystickOffset offset, string id = "0")
         {
-            if (threadRunning && subscribedSticks.Count == 0)
-                threadRunning = false;
-            else if (!threadRunning && subscribedSticks.Count > 0)
-                MonitorSticks();
-        }
-
-        private void MonitorSticks()
-        {
-            var t = new Thread(new ThreadStart(() =>
-            {
-                threadRunning = true;
-                //Debug.WriteLine("JoystickWrapper| MonitorSticks starting");
-                while (threadRunning)
-                {
-                    // Iterate subscribed sticks
-                    foreach (var subscribedStick in subscribedSticks)
-                    {
-                        var guid = subscribedStick.Key;
-                        var joystick = subscribedStick.Value.joystick;
-                        var subscriptions = subscribedStick.Value.subscriptions;
-                        // Poll the stick
-                        joystick.Poll();
-                        var data = joystick.GetBufferedData();
-                        // Iterate each report
-                        foreach (var state in data)
-                        {
-                            // Do we have any subscriptions for that input?
-                            if (subscriptions.ContainsKey(state.Offset))
-                            {
-                                // Fire all callbacks for that input
-                                foreach (var subscribedInput in subscriptions[state.Offset])
-                                {
-                                    //Debug.WriteLine(String.Format("JoystickWrapper| Firing callback for id {0}", subscribedInput.Key));
-                                    subscribedInput.Value(state.Value);
-                                }
-                            }
-                        }
-                    }
-                    Thread.Sleep(1);
-                }
-                //Debug.WriteLine("JoystickWrapper| MonitorSticks stopping");
-            }));
-            t.Start();
+            stickSubscriptions.Remove(guid, offset, id);
         }
 
         private bool IsStickType(DeviceInstance deviceInstance)
