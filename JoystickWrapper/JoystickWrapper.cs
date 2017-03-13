@@ -441,11 +441,11 @@ namespace JWNameSpace
         // Handles storing subscriptions for (and processing input of) a specific direction of a POV on a specific joystick
         private class SubscribedPovDirection
         {
-            public int Direction { get; set; }      // The Direction Mapped to. A number from 1-8
-            private int Angle { get; set; }         // The pure angle (in degrees) that the Direction maps to
-            public int Tolerance { get; set; }      //  How many degrees either side of angle to consider a match
-            private int Min { get; set; }           // The minimum angle to consider "pressed" (May contain negative value if Angle is close to 0)
-            private int Max { get; set; }           // The minimum angle to consider "pressed" (May contain value over 360 is Angle is close to 360)
+            public int Direction { get; set; }      // Setting: The Direction Mapped to. A number from 1-8
+            public int Tolerance { get; set; }      // Setting: How many degrees either side of angle to consider a match
+            private int Angle { get; set; }         // PreCalculation: The angle as reported by DirectX (0..36000) that the Direction maps to
+            private int Min { get; set; }           // PreCalculation: The minimum angle to consider "pressed" (May contain negative value if Angle is close to 0)
+            private int Max { get; set; }           // PreCalculation: The maximum angle to consider "pressed" (May contain value over 360 is Angle is close to 360)
             private bool State { get; set; }         // The current state of the direction. Used so we can decide whether to send press or release events
             public Dictionary<string, Subscription> Subscriptions { get; set; }
 
@@ -454,10 +454,11 @@ namespace JWNameSpace
                 Direction = povDirection;
                 State = false;
                 // Pre-calculate values, so we do less work each tick of the Monitor thread
-                Tolerance = 45; // Hard-code tolerance for now - allow configuring at some point. Tolerance setting is same for all bindings though.
-                Angle = (povDirection - 1) * 45;    // convert 8-way to degrees
-                Min = Angle - Tolerance;
-                Max = Angle + Tolerance;
+                Tolerance = 90; // Hard-code tolerance for now - allow configuring at some point. Tolerance setting is same for all bindings though.
+                Angle = (povDirection - 1) * 4500;    // convert 8-way to degrees
+                int tolAdjustment = (Tolerance / 2) * 100;
+                Min = Angle - tolAdjustment;
+                Max = Angle + tolAdjustment;
 
                 Subscriptions = new Dictionary<string, Subscription>(StringComparer.OrdinalIgnoreCase);
             }
