@@ -23,14 +23,14 @@ namespace JWNameSpace
                 Sticks = new Dictionary<Guid, SubscribedStick>();
             }
 
-            public void Add(string guidStr, JoystickOffset offset, dynamic handler, string id)
+            public void Add(string guidStr, JoystickOffset offset, dynamic handler, string id, int povDirection = 0)
             {
                 Guid guid = new Guid(guidStr);
                 if (!Sticks.ContainsKey(guid))
                 {
                     Sticks.Add(guid, new SubscribedStick(guid));
                 }
-                Sticks[guid].Add(offset, handler, id);
+                Sticks[guid].Add(offset, handler, id, povDirection);
                 SetMonitorState();
             }
 
@@ -95,13 +95,13 @@ namespace JWNameSpace
                 joystick.Acquire();
             }
 
-            public void Add(JoystickOffset offset, dynamic handler, string id)
+            public void Add(JoystickOffset offset, dynamic handler, string id, int povDirection = 0)
             {
                 if (!Inputs.ContainsKey(offset))
                 {
                     Inputs.Add(offset, new SubscribedInput());
                 }
-                Inputs[offset].Add(handler, id);
+                Inputs[offset].Add(handler, id, povDirection);
             }
 
             public bool Remove(JoystickOffset offset, string id)
@@ -136,21 +136,37 @@ namespace JWNameSpace
         // For a given input, maintains a list of Subscribers that wish to be notified when the input changes
         public class SubscribedInput
         {
+            public Dictionary<string, Subscription> Subscriptions { get; set; }
+            public Dictionary<int, PovDirectionSubscriptions> PovDirectionSubscriptions { get; set; }
+
             public SubscribedInput()
             {
                 Subscriptions = new Dictionary<string, Subscription>(StringComparer.OrdinalIgnoreCase);
+                PovDirectionSubscriptions = new Dictionary<int, PovDirectionSubscriptions>();
             }
-            public Dictionary<string, Subscription> Subscriptions { get; set; }
 
-            public void Add(dynamic handler, string subscriberID)
+            public void Add(dynamic handler, string subscriberID, int povDirection = 0)
             {
-                if (Subscriptions.ContainsKey(subscriberID))
+                if (povDirection == 0)
                 {
-                    Subscriptions[subscriberID].Callback = handler;
+                    // Regular mapping
+                    if (Subscriptions.ContainsKey(subscriberID))
+                    {
+                        Subscriptions[subscriberID].Callback = handler;
+                    }
+                    else
+                    {
+                        Subscriptions.Add(subscriberID, new Subscription(handler));
+                    }
                 }
                 else
                 {
-                    Subscriptions.Add(subscriberID, new Subscription(handler));
+                    // Pov Direction Mapping
+                    //if (povDirection < 1 || povDirection > 8)
+                    //{
+                    //    return /*false*/;
+                    //}
+                    PovDirectionSubscriptions.Add(povDirection, new PovDirectionSubscriptions(subscriberID, povDirection, handler));
                 }
             }
 
@@ -170,6 +186,11 @@ namespace JWNameSpace
                 {
                     sub.Value.Callback(value);
                 }
+
+                foreach (var dir in PovDirectionSubscriptions)
+                {
+                    dir.Value.ProcessPollRecord(value);
+                }
             }
         }
 
@@ -181,6 +202,51 @@ namespace JWNameSpace
             public Subscription(dynamic callback)
             {
                 Callback = callback;
+            }
+        }
+
+        // Holds information on a given POV Direction subscription
+        public class PovDirectionSubscriptions
+        {
+            public int Direction { get; set; }      // The Direction Mapped to. A number from 1-8
+            private int Angle { get; set; }         // The pure angle (in degrees) that the Direction maps to
+            public int Tolerance { get; set; }      //  How many degrees either side of angle to consider a match
+            private int Min { get; set; }           // The minimum angle to consider "pressed" (May contain negative value if Angle is close to 0)
+            private int Max { get; set; }           // The minimum angle to consider "pressed" (May contain value over 360 is Angle is close to 360)
+            private bool State { get; set; }         // The current state of the direction. Used so we can decide whether to send press or release events
+            public Dictionary<string, Subscription> Subscriptions { get; set; }
+
+            public PovDirectionSubscriptions(string subscriberID, int povDirection, dynamic callback)
+            {
+                Direction = povDirection;
+                State = false;
+                // Pre-calculate values, so we do less work each tick of the Monitor thread
+                Tolerance = 45; // Hard-code tolerance for now - allow configuring at some point. Tolerance setting is same for all bindings though.
+                Angle = (povDirection - 1) * 45;    // convert 8-way to degrees
+                Min = Angle - Tolerance;
+                Max = Angle + Tolerance;
+
+                Subscriptions = new Dictionary<string, Subscription>(StringComparer.OrdinalIgnoreCase);
+                Subscriptions.Add(subscriberID, new Subscription(callback));
+            }
+
+            public void ProcessPollRecord(int value)
+            {
+                bool newState = ValueMatchesAngle(value);
+                if (newState != State)
+                {
+                    State = newState;
+                    var ret = Convert.ToInt32(State);
+                    foreach (var sub in Subscriptions)
+                    {
+                        sub.Value.Callback(ret);
+                    }
+                }
+            }
+
+            private bool ValueMatchesAngle(int value)
+            {
+                return (value != -1 && value >= Min && value <= Max);
             }
         }
 
@@ -264,6 +330,8 @@ namespace JWNameSpace
         }
 
         // ================================ Publicly Exposed Methods =====================================
+        // Note! Be WARY of overloading any method expected to be hit by non C code
+        // To insulate end-users from unforseen behaviour, avoid overloading API endpoints
 
         // Constructor
         public JoystickWrapper()
@@ -301,6 +369,12 @@ namespace JWNameSpace
         {
             var offset = inputMappings[InputType.POV][index - 1];
             Subscribe(guid, offset, handler, id);
+        }
+
+        public void SubscribePovDirection(string guid, int index, int povDirection, dynamic handler, string id = "0")
+        {
+            var offset = inputMappings[InputType.POV][index - 1];
+            _SubscribePovDirection(guid, offset, povDirection, handler, id);
         }
 
         public void UnSubscribePov(string guid, int index, string id = "0")
@@ -355,6 +429,11 @@ namespace JWNameSpace
         private void Subscribe(string guid, JoystickOffset offset, dynamic handler, string id = "0")
         {
             stickSubscriptions.Add(guid, offset, handler, id);
+        }
+
+        private void _SubscribePovDirection(string guid, JoystickOffset offset, int povDirection, dynamic handler, string id = "0")
+        {
+            stickSubscriptions.Add(guid, offset, handler, id, povDirection);
         }
 
         private void UnSubscribe(string guid, JoystickOffset offset, string id = "0")
