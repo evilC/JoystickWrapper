@@ -115,6 +115,21 @@ namespace JWNameSpace
             return "";
         }
 
+        public string GetDeviceGuidByName(string name)
+        {
+            var devices = directInput.GetDevices();
+            foreach (var deviceInstance in devices)
+            {
+                if (!IsStickType(deviceInstance))
+                    continue;
+                if (String.Equals(deviceInstance.InstanceName.TrimEnd('\0'), name, StringComparison.OrdinalIgnoreCase))
+                {
+                    return deviceInstance.InstanceGuid.ToString();
+                }
+            }
+            return "";
+        }
+
         // ---------------------------- Publicly visible datatypes ---------------------------------
         // Allows categorization of input types
         public enum InputType { AXIS, BUTTON, POV };
