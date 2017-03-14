@@ -76,7 +76,7 @@ pov direction =
 1 : Up / North  
 2: Right / East  
 3: Down / South  
-4: Left / Up  
+4: Left / West  
 Each direction has a tolerance of 90 degrees, so eg up + right will trigger both up and right.  
 
 ###Query Methods
