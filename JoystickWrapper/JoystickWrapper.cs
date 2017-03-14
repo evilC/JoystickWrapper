@@ -217,12 +217,20 @@ namespace JWNameSpace
         // ================================================== Private Methods ==============================================================
         private bool Subscribe(string guid, JoystickOffset offset, dynamic handler, string id, int povDirection = 0)
         {
-            return stickSubscriptions.Add(guid, offset, handler, id, povDirection);
+            // Block the Monitor thread from polling while we update the data structures
+            lock (stickSubscriptions.Sticks)
+            {
+                return stickSubscriptions.Add(guid, offset, handler, id, povDirection);
+            }
         }
 
         private bool UnSubscribe(string guid, JoystickOffset offset, string id, int povDirection = 0)
         {
-            return stickSubscriptions.Remove(guid, offset, id, povDirection);
+            // Block the Monitor thread from polling while we update the data structures
+            lock (stickSubscriptions.Sticks)
+            {
+                return stickSubscriptions.Remove(guid, offset, id, povDirection);
+            }
         }
 
         private bool IsStickType(DeviceInstance deviceInstance)
@@ -298,7 +306,11 @@ namespace JWNameSpace
                         {
                             foreach (var subscribedStick in Sticks.Values)
                             {
-                                subscribedStick.Poll();
+                                // Obtain a lock, so that the data structures are not modified mid-poll
+                                lock (Sticks)
+                                {
+                                    subscribedStick.Poll();
+                                }
                             }
                         }
                         Thread.Sleep(1);
