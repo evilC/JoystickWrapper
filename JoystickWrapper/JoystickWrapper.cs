@@ -24,52 +24,52 @@ namespace JWNameSpace
 
 
         // --------------------------- Subscribe / Unsubscribe methods ----------------------------------------
-        public void SubscribeAxis(string guid, int index, dynamic handler, string id = "0")
+        public bool SubscribeAxis(string guid, int index, dynamic handler, string id = "0")
         {
             var offset = inputMappings[InputType.AXIS][index - 1];
-            Subscribe(guid, offset, handler, id);
+            return Subscribe(guid, offset, handler, id);
         }
 
-        public void UnSubscribeAxis(string guid, int index, string id = "0")
+        public bool UnSubscribeAxis(string guid, int index, string id = "0")
         {
             var offset = inputMappings[InputType.AXIS][index - 1];
-            UnSubscribe(guid, offset, id);
+            return UnSubscribe(guid, offset, id);
         }
 
-        public void SubscribeButton(string guid, int index, dynamic handler, string id = "0")
+        public bool SubscribeButton(string guid, int index, dynamic handler, string id = "0")
         {
             var offset = inputMappings[InputType.BUTTON][index - 1];
-            Subscribe(guid, offset, handler, id);
+            return Subscribe(guid, offset, handler, id);
         }
 
-        public void UnSubscribeButton(string guid, int index, string id = "0")
+        public bool UnSubscribeButton(string guid, int index, string id = "0")
         {
             var offset = inputMappings[InputType.BUTTON][index - 1];
-            UnSubscribe(guid, offset, id);
+            return UnSubscribe(guid, offset, id);
         }
 
-        public void SubscribePov(string guid, int index, dynamic handler, string id = "0")
+        public bool SubscribePov(string guid, int index, dynamic handler, string id = "0")
         {
             var offset = inputMappings[InputType.POV][index - 1];
-            Subscribe(guid, offset, handler, id);
+            return Subscribe(guid, offset, handler, id);
         }
 
-        public void SubscribePovDirection(string guid, int index, int povDirection, dynamic handler, string id = "0")
+        public bool SubscribePovDirection(string guid, int index, int povDirection, dynamic handler, string id = "0")
         {
             var offset = inputMappings[InputType.POV][index - 1];
-            Subscribe(guid, offset, handler, id, povDirection);
+            return Subscribe(guid, offset, handler, id, povDirection);
         }
 
-        public void UnSubscribePov(string guid, int index, string id = "0")
+        public bool UnSubscribePov(string guid, int index, string id = "0")
         {
             var offset = inputMappings[InputType.POV][index - 1];
-            UnSubscribe(guid, offset, id);
+            return UnSubscribe(guid, offset, id);
         }
 
-        public void UnSubscribePovDirection(string guid, int index, int povDirection, string id = "0")
+        public bool UnSubscribePovDirection(string guid, int index, int povDirection, string id = "0")
         {
             var offset = inputMappings[InputType.POV][index - 1];
-            UnSubscribe(guid, offset, id, povDirection);
+            return UnSubscribe(guid, offset, id, povDirection);
         }
 
         // ------------------------------ Querying Methods ------------------------------------
@@ -129,6 +129,8 @@ namespace JWNameSpace
             public DeviceInfo(DeviceInstance deviceInstance)
             {
                 var joystick = new Joystick(directInput, deviceInstance.InstanceGuid);
+                joystick.Acquire();
+                JoystickState state = joystick.GetCurrentState();
                 Axes = joystick.Capabilities.AxeCount;
                 Buttons = joystick.Capabilities.ButtonCount;
                 POVs = joystick.Capabilities.PovCount;
@@ -198,14 +200,14 @@ namespace JWNameSpace
         };
 
         // ================================================== Private Methods ==============================================================
-        private void Subscribe(string guid, JoystickOffset offset, dynamic handler, string id, int povDirection = 0)
+        private bool Subscribe(string guid, JoystickOffset offset, dynamic handler, string id, int povDirection = 0)
         {
-            stickSubscriptions.Add(guid, offset, handler, id, povDirection);
+            return stickSubscriptions.Add(guid, offset, handler, id, povDirection);
         }
 
-        private void UnSubscribe(string guid, JoystickOffset offset, string id, int povDirection = 0)
+        private bool UnSubscribe(string guid, JoystickOffset offset, string id, int povDirection = 0)
         {
-            stickSubscriptions.Remove(guid, offset, id, povDirection);
+            return stickSubscriptions.Remove(guid, offset, id, povDirection);
         }
 
         private bool IsStickType(DeviceInstance deviceInstance)
@@ -214,7 +216,8 @@ namespace JWNameSpace
                     || deviceInstance.Type == DeviceType.Gamepad
                     || deviceInstance.Type == DeviceType.FirstPerson
                     || deviceInstance.Type == DeviceType.Flight
-                    || deviceInstance.Type == DeviceType.Driving;
+                    || deviceInstance.Type == DeviceType.Driving
+                    || deviceInstance.Type == DeviceType.Supplemental;
         }
 
         // ------------------------------------------ Subscription Handling -------------------------------------------------
@@ -230,15 +233,17 @@ namespace JWNameSpace
                 Sticks = new Dictionary<Guid, SubscribedStick>();
             }
 
-            public void Add(string guidStr, JoystickOffset offset, dynamic handler, string id, int povDirection = 0)
+            public bool Add(string guidStr, JoystickOffset offset, dynamic handler, string id, int povDirection = 0)
             {
                 Guid guid = new Guid(guidStr);
                 if (!Sticks.ContainsKey(guid))
                 {
                     Sticks.Add(guid, new SubscribedStick(guid));
                 }
-                Sticks[guid].Add(offset, handler, id, povDirection);
-                SetMonitorState();
+                var ret = Sticks[guid].Add(offset, handler, id, povDirection);
+                if (ret)
+                    SetMonitorState();
+                return ret;
             }
 
             public bool Remove(string guidStr, JoystickOffset offset, string id, int povDirection = 0)
@@ -248,13 +253,13 @@ namespace JWNameSpace
                 {
                     return false;
                 }
-                Sticks[guid].Remove(offset, id, povDirection);
+                var ret = Sticks[guid].Remove(offset, id, povDirection);
                 if (Sticks[guid].IsEmpty())
                 {
                     Sticks.Remove(guid);
                     SetMonitorState();
                 }
-                return true;
+                return ret;
             }
 
             private void SetMonitorState()
@@ -305,13 +310,13 @@ namespace JWNameSpace
                 joystick.Acquire();
             }
 
-            public void Add(JoystickOffset offset, dynamic handler, string id, int povDirection = 0)
+            public bool Add(JoystickOffset offset, dynamic handler, string id, int povDirection = 0)
             {
                 if (!Inputs.ContainsKey(offset))
                 {
                     Inputs.Add(offset, new SubscribedInput());
                 }
-                Inputs[offset].Add(handler, id, povDirection);
+                return Inputs[offset].Add(handler, id, povDirection);
             }
 
             public bool Remove(JoystickOffset offset, string id, int povDirection = 0)
@@ -320,12 +325,15 @@ namespace JWNameSpace
                 {
                     return false;
                 }
-                Inputs[offset].Remove(id, povDirection);
-                if (Inputs[offset].Subscriptions.Count == 0)
+                var ret = Inputs[offset].Remove(id, povDirection);
+                if (ret)
                 {
-                    Inputs.Remove(offset);
+                    if (Inputs[offset].Subscriptions.Count == 0)
+                    {
+                        Inputs.Remove(offset);
+                    }
                 }
-                return true;
+                return ret;
             }
 
             public bool IsEmpty()
@@ -361,7 +369,7 @@ namespace JWNameSpace
                 PovDirectionSubscriptions = new Dictionary<int, SubscribedPovDirection>();
             }
 
-            public void Add(dynamic handler, string subscriberID, int povDirection = 0)
+            public bool Add(dynamic handler, string subscriberID, int povDirection = 0)
             {
                 if (povDirection == 0)
                 {
@@ -374,19 +382,20 @@ namespace JWNameSpace
                     {
                         Subscriptions.Add(subscriberID, new Subscription(handler));
                     }
+                    return true;
                 }
                 else
                 {
-                    // Pov Direction Mapping
-                    //if (povDirection < 1 || povDirection > 4)
-                    //{
-                    //    return /*false*/;
-                    //}
+                    //Pov Direction Mapping
+                    if (povDirection < 1 || povDirection > 4)
+                    {
+                        return false;
+                    }
                     if (!PovDirectionSubscriptions.ContainsKey(povDirection))
                     {
                         PovDirectionSubscriptions.Add(povDirection, new SubscribedPovDirection(povDirection));
                     }
-                    PovDirectionSubscriptions[povDirection].Add(subscriberID, handler);
+                    return PovDirectionSubscriptions[povDirection].Add(subscriberID, handler);
                 }
             }
 
@@ -408,12 +417,12 @@ namespace JWNameSpace
                     if (PovDirectionSubscriptions.ContainsKey(povDirection))
                     {
 
-                        PovDirectionSubscriptions[povDirection].Remove(subscriberID);
-                        if (PovDirectionSubscriptions[povDirection].IsEmpty())
+                        var ret = PovDirectionSubscriptions[povDirection].Remove(subscriberID);
+                        if (ret && PovDirectionSubscriptions[povDirection].IsEmpty())
                         {
                             PovDirectionSubscriptions.Remove(povDirection);
                         }
-                        return true;
+                        return ret;
                     }
                     return false;
                 }
@@ -463,17 +472,20 @@ namespace JWNameSpace
                 Subscriptions = new Dictionary<string, Subscription>(StringComparer.OrdinalIgnoreCase);
             }
 
-            public void Add(string subscriberID, dynamic handler)
+            public bool Add(string subscriberID, dynamic handler)
             {
                 Subscriptions.Add(subscriberID, new Subscription(handler));
+                return true;
             }
 
-            public void Remove(string subscriberID)
+            public bool Remove(string subscriberID)
             {
                 if (Subscriptions.ContainsKey(subscriberID))
                 {
                     Subscriptions.Remove(subscriberID);
+                    return true;
                 }
+                return false;
             }
 
             public bool IsEmpty()
