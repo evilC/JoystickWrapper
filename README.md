@@ -85,9 +85,9 @@ Each direction has a tolerance of 90 degrees, so eg up + right will trigger both
 Returns a list of devices, their names, guids, and capabilities.
 
 ####GetAnyDeviceGuid
-Gets any guid that it can find. Useful to make demo scripts simple.
-    guid := jw.GetAnyDeviceGuid()
-    jw.SuscribeAxis(guid, ...
+Gets any guid that it can find. Useful to make demo scripts simple  
+    guid := jw.GetAnyDeviceGuid()  
+    jw.SuscribeAxis(guid, 1)  
 
 ##Goals
 ~~striked items~~ are done
