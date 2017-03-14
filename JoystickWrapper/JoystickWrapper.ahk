@@ -35,8 +35,16 @@ class JoystickWrapper {
 		this.Interface.SubscribePov(guid, index, callback, id)
 	}
 
+	SubscribePovDirection(guid, index, povDirection, callback, id := 0){
+		this.Interface.SubscribePov(guid, index, povDirection, callback, id)
+	}
+
 	UnSubscribePov(guid, index, id := 0){
 		this.Interface.UnSubscribePov(guid, index, id)
+	}
+	
+	UnSubscribePovDirection(guid, index, povDirection, id := 0){
+		this.Interface.UnSubscribePov(guid, index, povDirection, id)
 	}
 	
 
