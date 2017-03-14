@@ -10,6 +10,10 @@ class JoystickWrapper {
 	__New(dllpath){
 		this.DllPath := dllpath
 		; Load the C# DLL
+		if (!FileExist(dllpath)){
+			msgbox % "JoystickWrapper: DLL file " dllpath " not found"
+			ExitApp
+		}
 		asm := CLR_LoadLibrary(dllpath)
 		; Use CLR to instantiate a class from within the DLL
 		this.Interface := asm.CreateInstance("JWNameSpace.JoystickWrapper")
