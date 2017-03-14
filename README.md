@@ -37,12 +37,57 @@ There is also a DirectX wrapper for C# called [SharpDX ](http://sharpdx.org/) wh
   ```#include JoystickWrapper.ahk```
   3. Instantiate AHK `JoystickWrapper` class, passing it the path to the DLL  
   ```jw := new JoystickWrapper("JoystickWrapper.dll")```
-  4. You may now subscribe to inputs, eg using  
-  ```jw.SubscribeAxis(<stick guid>, <axis id>, <callback>[ ,<subscriber id>])```  
-  **Multiple subscriptions to the same input are possible by supplying a different `Subscriber Id`**  
-  The `Subscriber Id` parameter can be omitted for single-subscriber use
+  4. You may now subscribe to inputs, eg using one of the API commands, eg:
+  ```jw.SubscribeAxis(<some stick guid>, 1, Func("SomeFunc"))```
+  
+##What functions does it provide?
+###Input Subscriptions
+The subscription commands share some common parameters:  
+guid - A GUID for a stick.  
+This uniquely identifies a stick on your system, and should be constant across runs.  
+You can find GUIDs using one of the Query Commands below.  
 
-For more info, see the demo AHK scripts in the JoystickWrapper folder.  
+subscriber id - (Optional) Allows multiple subscriptions to the same input  
+If you wish to have multiple subscriptions on the same input, you can call subscribe commands multiple times...  
+... But each time, pass a different Subscriber ID. It can be any string.  
+If omitted, "0" is used.
+
+####Subscribe / Unsubscribe Axis  
+    jw.SubscribeAxis(<stick guid>, <axis id>, <callback>[ ,<subscriber id>])
+    jw.UnSubscribeAxis(<stick guid>, <axis id>, [ ,<subscriber id>])
+axis id = 1 - 8  
+
+####Subscribe / Unsubscribe Button  
+    jw.SubscribeButton(<stick guid>, <button id>, <callback>[ ,<subscriber id>])
+    jw.UnSubscribeButton(<stick guid>, <button id>, [ ,<subscriber id>])
+button id = 1 - 128  
+
+####Subscribe / Unsubscribe POV (D-Pad)  
+    jw.SubscribePov(<stick guid>, <pov id>, <callback>[ ,<subscriber id>])
+    jw.UnSubscribePov(<stick guid>, <pov id>, [ ,<subscriber id>])
+pov id = 1 - 4  
+
+####Subscribe / Unsubscribe POV Direction (Up / Down / Left / Right)  
+    jw.SubscribePovDirection(<stick guid>, <pov id>, <pov direction>,<callback>[ ,<subscriber id>])
+    jw.UnSubscribePovDirection(<stick guid>, <pov id>, <pov direction> ,[ ,<subscriber id>])
+
+pov id = 1 - 4 
+pov direction =  
+1 : Up / North  
+2: Right / East  
+3: Down / South  
+4: Left / Up  
+Each direction has a tolerance of 90 degrees, so eg up + right will trigger both up and right.  
+
+###Query Methods
+####GetDevices
+    jw.GetDevices()
+Returns a list of devices, their names, guids, and capabilities.
+
+####GetAnyDeviceGuid
+Gets any guid that it can find. Useful to make demo scripts simple.
+    guid := jw.GetAnyDeviceGuid()
+    jw.SuscribeAxis(guid, ...
 
 ##Goals
 ~~striked items~~ are done
@@ -57,7 +102,7 @@ For more info, see the demo AHK scripts in the JoystickWrapper folder.
   * ~~Ability to subscribe to individual axes~~
   * ~~Ability to subscribe to individual buttons~~
   * ~~Ability to subscribe to individual POVs~~
-  * Ability to subscribe to individual POV *directions* like UCR currently does
+  * ~~Ability to subscribe to individual POV *directions* like UCR currently does~~
 
 ###Could Have
   * Integration with Nefarius' upcoming [HidGuardian / HidCerberus](https://github.com/nefarius/ViGEm) system
