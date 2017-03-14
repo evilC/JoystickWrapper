@@ -26,48 +26,64 @@ namespace JWNameSpace
         // --------------------------- Subscribe / Unsubscribe methods ----------------------------------------
         public bool SubscribeAxis(string guid, int index, dynamic handler, string id = "0")
         {
+            if (index < 1 || index > 8)
+                return false;
             var offset = inputMappings[InputType.AXIS][index - 1];
             return Subscribe(guid, offset, handler, id);
         }
 
         public bool UnSubscribeAxis(string guid, int index, string id = "0")
         {
+            if (index < 1 || index > 8)
+                return false;
             var offset = inputMappings[InputType.AXIS][index - 1];
             return UnSubscribe(guid, offset, id);
         }
 
         public bool SubscribeButton(string guid, int index, dynamic handler, string id = "0")
         {
+            if (index < 1 || index > 128)
+                return false;
             var offset = inputMappings[InputType.BUTTON][index - 1];
             return Subscribe(guid, offset, handler, id);
         }
 
         public bool UnSubscribeButton(string guid, int index, string id = "0")
         {
+            if (index < 1 || index > 128)
+                return false;
             var offset = inputMappings[InputType.BUTTON][index - 1];
             return UnSubscribe(guid, offset, id);
         }
 
         public bool SubscribePov(string guid, int index, dynamic handler, string id = "0")
         {
+            if (index < 1 || index > 4)
+                return false;
             var offset = inputMappings[InputType.POV][index - 1];
             return Subscribe(guid, offset, handler, id);
         }
 
         public bool SubscribePovDirection(string guid, int index, int povDirection, dynamic handler, string id = "0")
         {
+            if (index < 1 || index > 4 || povDirection < 1 || povDirection > 4)
+                return false;
             var offset = inputMappings[InputType.POV][index - 1];
             return Subscribe(guid, offset, handler, id, povDirection);
         }
 
         public bool UnSubscribePov(string guid, int index, string id = "0")
         {
+            if (index < 1 || index > 4)
+                return false;
             var offset = inputMappings[InputType.POV][index - 1];
             return UnSubscribe(guid, offset, id);
         }
 
         public bool UnSubscribePovDirection(string guid, int index, int povDirection, string id = "0")
         {
+            if (index < 1 || index > 4 || povDirection < 1 || povDirection > 4)
+                return false;
             var offset = inputMappings[InputType.POV][index - 1];
             return UnSubscribe(guid, offset, id, povDirection);
         }
@@ -256,17 +272,40 @@ namespace JWNameSpace
                 Sticks = new Dictionary<Guid, SubscribedStick>();
             }
 
-            public bool Add(string guidStr, JoystickOffset offset, dynamic handler, string id, int povDirection = 0)
+            public bool RegisterStick(string guidStr)
             {
                 Guid guid = new Guid(guidStr);
+                Joystick joystick;
                 if (!Sticks.ContainsKey(guid))
                 {
-                    Sticks.Add(guid, new SubscribedStick(guid));
+                    try
+                    {
+                        joystick = new Joystick(directInput, guid);
+                    }
+                    catch
+                    {
+                        return false;
+                    }
+                    var stick = new SubscribedStick(joystick);
+                    Sticks.Add(guid, stick);
                 }
-                var ret = Sticks[guid].Add(offset, handler, id, povDirection);
-                if (ret)
-                    SetMonitorState();
-                return ret;
+                return true;
+            }
+
+            public bool Add(string guidStr, JoystickOffset offset, dynamic handler, string id, int povDirection = 0)
+            {
+                if (!RegisterStick(guidStr))
+                {
+                    return false;
+                }
+                Guid guid = new Guid(guidStr);
+                if (!Sticks[guid].Add(offset, handler, id, povDirection))
+                {
+                    RemoveStickIfEmpty(guid);   // If the stick was valid, but non-existent axis or button, then remove the stick again if it is empty
+                    return false;
+                }
+                SetMonitorState();
+                return true;
             }
 
             public bool Remove(string guidStr, JoystickOffset offset, string id, int povDirection = 0)
@@ -277,12 +316,20 @@ namespace JWNameSpace
                     return false;
                 }
                 var ret = Sticks[guid].Remove(offset, id, povDirection);
+                RemoveStickIfEmpty(guid);
+                return ret;
+            }
+
+            // If a stick has no bindings associated with it, remove it from the Dictionary, so the Monitor thread does not poll it
+            private bool RemoveStickIfEmpty(Guid guid)
+            {
                 if (Sticks[guid].IsEmpty())
                 {
                     Sticks.Remove(guid);
                     SetMonitorState();
+                    return true;
                 }
-                return ret;
+                return false;
             }
 
             private void SetMonitorState()
@@ -324,21 +371,40 @@ namespace JWNameSpace
         // Handles storing subscriptions for (and processing input of) a specific joystick
         private class SubscribedStick
         {
+            public Dictionary<JoystickOffset, bool> SupportedInputs { get; set; }
             public Dictionary<JoystickOffset, SubscribedInput> Inputs { get; set; }
-            private Joystick joystick;
+            public Joystick joystick;
 
-            public SubscribedStick(Guid guid)
+            public SubscribedStick(Joystick passedStick)
             {
+                joystick = passedStick;
                 Inputs = new Dictionary<JoystickOffset, SubscribedInput>();
-                joystick = new Joystick(directInput, guid);
+                SupportedInputs = new Dictionary<JoystickOffset, bool>();
+                
                 // Set BufferSize in order to use buffered data.
                 joystick.Properties.BufferSize = 128;
 
                 joystick.Acquire();
+
+                foreach (JoystickOffset offset in Enum.GetValues(typeof(JoystickOffset)))
+                {
+                    var present = true;
+                    try
+                    {
+                        var test = joystick.GetObjectInfoByName(offset.ToString());
+                    }
+                    catch
+                    {
+                        present = false;
+                    }
+                    SupportedInputs[offset] = present;
+                }
             }
 
             public bool Add(JoystickOffset offset, dynamic handler, string id, int povDirection = 0)
             {
+                if (!SupportedInputs[offset])
+                    return false;
                 if (!Inputs.ContainsKey(offset))
                 {
                     Inputs.Add(offset, new SubscribedInput());
