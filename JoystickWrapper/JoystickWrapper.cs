@@ -156,6 +156,9 @@ namespace JWNameSpace
             public int Axes { get; set; }
             public int Buttons { get; set; }
             public int POVs { get; set; }
+            public int[] SupportedAxes { get; set; }
+
+            private static List<JoystickOffset> joystickAxisOffsets = new List<JoystickOffset>() { JoystickOffset.X, JoystickOffset.Y, JoystickOffset.Z, JoystickOffset.RotationX, JoystickOffset.RotationY, JoystickOffset.RotationZ, JoystickOffset.Sliders0, JoystickOffset.Sliders1 };
 
             public DeviceInfo(DeviceInstance deviceInstance)
             {
@@ -168,6 +171,20 @@ namespace JWNameSpace
 
                 Name = deviceInstance.InstanceName;
                 Guid = deviceInstance.InstanceGuid.ToString();
+
+
+                var sa = new List<int>();
+                for (int i = 0; i < joystickAxisOffsets.Count; i++)
+                {
+                    try
+                    {
+                        var mightGoBoom = joystick.GetObjectInfoByName(joystickAxisOffsets[i].ToString());
+                        sa.Add(i+1);
+                    }
+                    catch { }
+                }
+                SupportedAxes = sa.ToArray();
+                joystick.Unacquire();
             }
 
             public string Name { get; set; }

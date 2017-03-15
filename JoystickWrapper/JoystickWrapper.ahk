@@ -58,19 +58,23 @@ class JoystickWrapper {
 		ct := _device_list.MaxIndex()+1
 		Loop % ct {
 			dev := _device_list[A_Index - 1]
-			device_list[dev.Guid] := { Name: dev.Name, Guid: dev.Guid, Axes: dev.Axes, Buttons: dev.Buttons, POVs: dev.POVs}
+			device_list[dev.Guid] := { Name: dev.Name, Guid: dev.Guid, Axes: dev.Axes, SupportedAxes: [], Buttons: dev.Buttons, POVs: dev.POVs }
+			sa := dev.SupportedAxes
+			Loop % sa.MaxIndex()+1 {
+				device_list[dev.Guid].SupportedAxes.Push(sa[A_Index - 1])
+			}
 		}
 		return device_list
 	}
 	
 	GetAnyDeviceGuid(){
 		return this.Interface.GetDevices()[0].Guid
-		devices := this.GetDevices()
-		for guid, dev in devices {
-			return guid
-		}
-		return 0
 	}
+	
+	GetDeviceGuidByName(name){
+		return this.Interface.GetDeviceGuidByName(name)
+	}
+
 }
 
 ; ==========================================================
