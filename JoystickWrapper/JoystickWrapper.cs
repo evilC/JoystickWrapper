@@ -401,6 +401,15 @@ namespace JWNameSpace
                 }
             }
 
+            ~SubscribedStick()
+            {
+                try
+                {
+                    joystick.Unacquire();
+                }
+                catch { }
+            }
+
             public bool Add(JoystickOffset offset, dynamic handler, string id, int povDirection = 0)
             {
                 if (!SupportedInputs[offset])
