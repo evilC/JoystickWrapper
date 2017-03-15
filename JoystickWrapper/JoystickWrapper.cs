@@ -174,7 +174,7 @@ namespace JWNameSpace
             public string Guid { get; set; }
         }
 
-        // =============================================== Private Classes ==========================================
+        // =============================================== Private datatypes ==========================================
 
         // Maps SharpDX "Offsets" (Input Identifiers) to both iinput type and input index (eg x axis to axis 1)
         private static Dictionary<InputType, List<JoystickOffset>> inputMappings = new Dictionary<InputType, List<JoystickOffset>>(){
