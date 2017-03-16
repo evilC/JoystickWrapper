@@ -30,8 +30,13 @@ GuiClose(hwnd){
 	global hMain
 	if (hwnd == hMain){
 		ExitApp
+	} else {
+		Monitors.Delete(hwnd)
 	}
 }
+
+^Esc::
+	ExitApp
 
 class Monitor {
 	static AxisList := ["X", "Y", "Z", "Rx", "Ry", "Rz", "S0", "S1"]
