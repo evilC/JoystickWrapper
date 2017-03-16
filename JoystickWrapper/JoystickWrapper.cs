@@ -572,8 +572,6 @@ namespace JWNameSpace
             public int Direction { get; set; }      // Setting: The Direction Mapped to. A number from 1-4 N/E/S/W
             public int Tolerance { get; set; }      // Setting: How many degrees either side of angle to consider a match
             private int Angle { get; set; }         // PreCalculation: The angle as reported by DirectX (0..36000) that the Direction maps to
-            private int Min { get; set; }           // PreCalculation: The minimum angle to consider "pressed" (May contain negative value if Angle is close to 0)
-            private int Max { get; set; }           // PreCalculation: The maximum angle to consider "pressed" (May contain value over 360 is Angle is close to 360)
             private bool State { get; set; }         // The current state of the direction. Used so we can decide whether to send press or release events
             public Dictionary<string, Subscription> Subscriptions { get; set; }
 
@@ -582,12 +580,8 @@ namespace JWNameSpace
                 Direction = povDirection;
                 State = false;
                 // Pre-calculate values, so we do less work each tick of the Monitor thread
-                Tolerance = 90; // Hard-code tolerance for now - allow configuring at some point. Tolerance setting is same for all bindings though.
+                Tolerance = 4500; // Hard-code tolerance for now - allow configuring at some point. Tolerance setting is same for all bindings though.
                 Angle = (povDirection - 1) * 9000;    // convert 4-way to degrees
-                int tolAdjustment = (Tolerance / 2) * 100;
-                Min = Angle - tolAdjustment;
-                Max = Angle + tolAdjustment;
-
                 Subscriptions = new Dictionary<string, Subscription>(StringComparer.OrdinalIgnoreCase);
             }
 
@@ -628,7 +622,24 @@ namespace JWNameSpace
 
             private bool ValueMatchesAngle(int value)
             {
-                return (value != -1 && value >= Min && value <= Max);
+                if (value == -1)
+                    return false;
+                var diff = AngleDiff(value, Angle);
+                Debug.WriteLine(String.Format("JoystickWrapper| Angle = {0}, Value = {1}, Diff = {2}", Angle, value, diff));
+                return value != -1 && AngleDiff(value, Angle) <= Tolerance;
+            }
+
+            private int AngleDiff(int a, int b)
+            {
+                var result1 = a - b;
+                if (result1 < 0)
+                    result1 += 36000;
+
+                var result2 = b - a;
+                if (result2 < 0)
+                    result2 += 36000;
+
+                return Math.Min(result1, result2);
             }
         }
 
