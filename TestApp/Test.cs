@@ -17,8 +17,9 @@ namespace TestApp
 
             // You can enumerate available devices like this...
             //var devs = jw.GetDevices();
-            //var guid = devs[0].Guid;
-            //var guid = jw.GetDeviceGuidByName("vjoy device"); // Case insensitive get guid from name
+            //var guidStr = devs[0].Guid;
+            //var guidStr = jw.GetDeviceGuidByName("vjoy device"); // Case insensitive get guid from name
+            //var guidStr = jw.GetDeviceGuidByName("Controller (XBOX 360 For Windows)"); // Case insensitive get guid from name
 
             // Or just pick any device like this...
             var guidStr = jw.GetAnyDeviceGuid();
