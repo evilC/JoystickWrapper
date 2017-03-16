@@ -8,6 +8,7 @@ if (guid := jw.GetAnyDeviceGuid()){
 	jw.SubscribeAxis(guid, 1, Func("TestFunc").Bind("Axis"))
 	jw.SubscribeButton(guid, 1, Func("TestFunc").Bind("Button"))
 	jw.SubscribePov(guid, 1, Func("TestFunc").Bind("Pov"))
+	jw.SubscribePovDirection(guid, 1, 1, Func("TestFunc").Bind("PovDirection"))
 } else {
 	MsgBox "No sticks found"
 	ExitApp
