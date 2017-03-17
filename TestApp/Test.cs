@@ -15,13 +15,14 @@ namespace TestApp
             Debug.WriteLine("DBGVIEWCLEAR");
             var jw = new JoystickWrapper();
 
+            jw.SubscribeXboxAxis(1, 1, new Action<int>((value) => { Console.WriteLine("XBox Axis 1 Value: " + value); }), "LV1");
+            return;
+
             // You can enumerate available devices like this...
             //var devs = jw.GetDevices();
             //var guidStr = devs[0].Guid;
             //var guidStr = jw.GetDeviceGuidByName("vjoy device"); // Case insensitive get guid from name
             //var guidStr = jw.GetDeviceGuidByName("Controller (XBOX 360 For Windows)"); // Case insensitive get guid from name
-            jw.SubscribeXboxAxis(1, 1, new Action<int>((value) => { Console.WriteLine("XBox Axis 1 Value: " + value); }), "LV1");
-            return;
 
             // Or just pick any device like this...
             var guidStr = jw.GetAnyDeviceGuid();
