@@ -675,7 +675,8 @@ namespace JWNameSpace
         private class SubscribedXInputStick
         {
             public Controller controller;
-            private dynamic temp;
+            private dynamic tempCallback;
+            private int tempAxisId;
 
             public SubscribedXInputStick(UserIndex controllerId)
             {
@@ -684,15 +685,16 @@ namespace JWNameSpace
 
             public bool Add(int axisId, dynamic handler, string subscriberId, int povDirection)
             {
-                temp = handler;
+                tempCallback = handler;
+                tempAxisId = axisId;
                 return true;
             }
 
             public void Poll()
             {
                 var state = controller.GetState();
-                var ax = state.Gamepad.LeftThumbX;
-                temp(ax);
+                var ax = Convert.ToInt32(state.Gamepad.GetType().GetField(xinputAxes[tempAxisId-1]).GetValue(state.Gamepad));
+                tempCallback(ax);
             }
         }
         #endregion

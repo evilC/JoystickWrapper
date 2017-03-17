@@ -59,5 +59,10 @@ namespace JWNameSpace
 
             }
         };
+
+        private static List<string> xinputAxes = new List<string>()
+        {
+            "LeftThumbX", "LeftThumbY", "RightThumbX", "RightThumbY", "LeftTrigger", "RightTrigger"
+        };
     }
 }
