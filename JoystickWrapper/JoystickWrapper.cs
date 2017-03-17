@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 
 using SharpDX.DirectInput;
+using SharpDX.XInput;
 //using System.Diagnostics;
 
 namespace JWNameSpace
@@ -81,6 +82,11 @@ namespace JWNameSpace
                 return false;
             var offset = inputMappings[InputType.POV][index - 1];
             return UnSubscribe(guid, offset, id, povDirection);
+        }
+
+        public bool SubscribeXboxAxis(int controllerId, int axisId, dynamic handler, string id = "0")
+        {
+            return Subscribe((UserIndex)controllerId-1, axisId, handler, id);
         }
         #endregion
 
@@ -198,16 +204,24 @@ namespace JWNameSpace
         private bool Subscribe(string guid, JoystickOffset offset, dynamic handler, string id, int povDirection = 0)
         {
             // Block the Monitor thread from polling while we update the data structures
-            lock (stickSubscriptions.Sticks)
+            lock (stickSubscriptions.DirectXSticks)
             {
                 return stickSubscriptions.Add(guid, offset, handler, id, povDirection);
+            }
+        }
+
+        private bool Subscribe(UserIndex controllerId, int inputId, dynamic handler, string id, int povDirection = 0)
+        {
+            lock (stickSubscriptions.XInputSticks)
+            {
+                return stickSubscriptions.Add(controllerId, inputId, handler, id, povDirection);
             }
         }
 
         private bool UnSubscribe(string guid, JoystickOffset offset, string id, int povDirection = 0)
         {
             // Block the Monitor thread from polling while we update the data structures
-            lock (stickSubscriptions.Sticks)
+            lock (stickSubscriptions.DirectXSticks)
             {
                 return stickSubscriptions.Remove(guid, offset, id, povDirection);
             }
@@ -217,12 +231,12 @@ namespace JWNameSpace
         #region Helper Methods
         private bool IsStickType(DeviceInstance deviceInstance)
         {
-            return deviceInstance.Type == DeviceType.Joystick
-                    || deviceInstance.Type == DeviceType.Gamepad
-                    || deviceInstance.Type == DeviceType.FirstPerson
-                    || deviceInstance.Type == DeviceType.Flight
-                    || deviceInstance.Type == DeviceType.Driving
-                    || deviceInstance.Type == DeviceType.Supplemental;
+            return deviceInstance.Type == SharpDX.DirectInput.DeviceType.Joystick
+                    || deviceInstance.Type == SharpDX.DirectInput.DeviceType.Gamepad
+                    || deviceInstance.Type == SharpDX.DirectInput.DeviceType.FirstPerson
+                    || deviceInstance.Type == SharpDX.DirectInput.DeviceType.Flight
+                    || deviceInstance.Type == SharpDX.DirectInput.DeviceType.Driving
+                    || deviceInstance.Type == SharpDX.DirectInput.DeviceType.Supplemental;
         }
         #endregion
 
@@ -233,19 +247,21 @@ namespace JWNameSpace
         // Handles storing subscriptions for (and processing input of) a collection of joysticks
         private class SubscribedSticks
         {
-            public Dictionary<Guid, SubscribedStick> Sticks { get; set; }
+            public Dictionary<Guid, SubscribedDirectXStick> DirectXSticks { get; set; }
+            public Dictionary<UserIndex, SubscribedXInputStick> XInputSticks { get; set; }
             public bool threadRunning = false;
 
             public SubscribedSticks()
             {
-                Sticks = new Dictionary<Guid, SubscribedStick>();
+                DirectXSticks = new Dictionary<Guid, SubscribedDirectXStick>();
+                XInputSticks = new Dictionary<UserIndex, SubscribedXInputStick>();
             }
 
             public bool RegisterStick(string guidStr)
             {
                 Guid guid = new Guid(guidStr);
                 Joystick joystick;
-                if (!Sticks.ContainsKey(guid))
+                if (!DirectXSticks.ContainsKey(guid))
                 {
                     try
                     {
@@ -255,12 +271,23 @@ namespace JWNameSpace
                     {
                         return false;
                     }
-                    var stick = new SubscribedStick(joystick);
-                    Sticks.Add(guid, stick);
+                    var stick = new SubscribedDirectXStick(joystick);
+                    DirectXSticks.Add(guid, stick);
                 }
                 return true;
             }
 
+            public bool RegisterStick(UserIndex player)
+            {
+                var controller = new Controller(player);
+                if (!controller.IsConnected)
+                    return false;
+                var subscribedController = new SubscribedXInputStick(player);
+                XInputSticks.Add(player, subscribedController);
+                return true;
+            }
+
+            // DirectX
             public bool Add(string guidStr, JoystickOffset offset, dynamic handler, string id, int povDirection = 0)
             {
                 if (!RegisterStick(guidStr))
@@ -268,9 +295,25 @@ namespace JWNameSpace
                     return false;
                 }
                 Guid guid = new Guid(guidStr);
-                if (!Sticks[guid].Add(offset, handler, id, povDirection))
+                if (!DirectXSticks[guid].Add(offset, handler, id, povDirection))
                 {
                     RemoveStickIfEmpty(guid);   // If the stick was valid, but non-existent axis or button, then remove the stick again if it is empty
+                    return false;
+                }
+                SetMonitorState();
+                return true;
+            }
+
+            // XInput
+            public bool Add(UserIndex controllerId, int axisId, dynamic handler, string subscriberId, int povDirection = 0)
+            {
+                if (!RegisterStick(controllerId))
+                {
+                    return false;
+                }
+                if (!XInputSticks[controllerId].Add(axisId, handler, subscriberId, povDirection))
+                {
+                    //RemoveStickIfEmpty(controllerId);   // If the stick was valid, but non-existent axis or button, then remove the stick again if it is empty
                     return false;
                 }
                 SetMonitorState();
@@ -280,11 +323,11 @@ namespace JWNameSpace
             public bool Remove(string guidStr, JoystickOffset offset, string id, int povDirection = 0)
             {
                 Guid guid = new Guid(guidStr);
-                if (!Sticks.ContainsKey(guid))
+                if (!DirectXSticks.ContainsKey(guid))
                 {
                     return false;
                 }
-                var ret = Sticks[guid].Remove(offset, id, povDirection);
+                var ret = DirectXSticks[guid].Remove(offset, id, povDirection);
                 RemoveStickIfEmpty(guid);
                 return ret;
             }
@@ -292,9 +335,9 @@ namespace JWNameSpace
             // If a stick has no bindings associated with it, remove it from the Dictionary, so the Monitor thread does not poll it
             private bool RemoveStickIfEmpty(Guid guid)
             {
-                if (Sticks[guid].IsEmpty())
+                if (DirectXSticks[guid].IsEmpty())
                 {
-                    Sticks.Remove(guid);
+                    DirectXSticks.Remove(guid);
                     SetMonitorState();
                     return true;
                 }
@@ -303,9 +346,9 @@ namespace JWNameSpace
 
             private void SetMonitorState()
             {
-                if (threadRunning && Sticks.Count == 0)
+                if (threadRunning && DirectXSticks.Count == 0 && XInputSticks.Count == 0)
                     threadRunning = false;
-                else if (!threadRunning && Sticks.Count > 0)
+                else if (!threadRunning && (DirectXSticks.Count > 0 || XInputSticks.Count > 0))
                     MonitorSticks();
             }
 
@@ -318,11 +361,22 @@ namespace JWNameSpace
                     while (threadRunning)
                     {
                         // Iterate subscribed sticks
-                        if (Sticks.Count > 0)
+                        if (DirectXSticks.Count > 0)
                         {
-                            lock (Sticks)
+                            lock (DirectXSticks)
                             {
-                                foreach (var subscribedStick in Sticks.Values)
+                                foreach (var subscribedStick in DirectXSticks.Values)
+                                {
+                                    // Obtain a lock, so that the data structures are not modified mid-poll
+                                    subscribedStick.Poll();
+                                }
+                            }
+                        }
+                        if (XInputSticks.Count > 0)
+                        {
+                            lock (XInputSticks)
+                            {
+                                foreach (var subscribedStick in XInputSticks.Values)
                                 {
                                     // Obtain a lock, so that the data structures are not modified mid-poll
                                     subscribedStick.Poll();
@@ -340,13 +394,13 @@ namespace JWNameSpace
 
         #region Single Stick
         // Handles storing subscriptions for (and processing input of) a specific joystick
-        private class SubscribedStick
+        private class SubscribedDirectXStick
         {
             public Dictionary<JoystickOffset, bool> SupportedInputs { get; set; }
             public Dictionary<JoystickOffset, SubscribedInput> Inputs { get; set; }
             public Joystick joystick;
 
-            public SubscribedStick(Joystick passedStick)
+            public SubscribedDirectXStick(Joystick passedStick)
             {
                 joystick = passedStick;
                 Inputs = new Dictionary<JoystickOffset, SubscribedInput>();
@@ -372,7 +426,7 @@ namespace JWNameSpace
                 }
             }
 
-            ~SubscribedStick()
+            ~SubscribedDirectXStick()
             {
                 try
                 {
@@ -617,5 +671,30 @@ namespace JWNameSpace
 
         #endregion
 
+        #region XInput
+        private class SubscribedXInputStick
+        {
+            public Controller controller;
+            private dynamic temp;
+
+            public SubscribedXInputStick(UserIndex controllerId)
+            {
+                controller = new Controller(controllerId);
+            }
+
+            public bool Add(int axisId, dynamic handler, string subscriberId, int povDirection)
+            {
+                temp = handler;
+                return true;
+            }
+
+            public void Poll()
+            {
+                var state = controller.GetState();
+                var ax = state.Gamepad.LeftThumbX;
+                temp(ax);
+            }
+        }
+        #endregion
     }
 }
