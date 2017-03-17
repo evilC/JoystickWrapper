@@ -368,11 +368,11 @@ namespace JWNameSpace
                         // Iterate subscribed sticks
                         if (Sticks.Count > 0)
                         {
-                            foreach (var subscribedStick in Sticks.Values)
+                            lock (Sticks)
                             {
-                                // Obtain a lock, so that the data structures are not modified mid-poll
-                                lock (Sticks)
+                                foreach (var subscribedStick in Sticks.Values)
                                 {
+                                    // Obtain a lock, so that the data structures are not modified mid-poll
                                     subscribedStick.Poll();
                                 }
                             }
