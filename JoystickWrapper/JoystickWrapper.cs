@@ -362,7 +362,7 @@ namespace JWNameSpace
                 var t = new Thread(new ThreadStart(() =>
                 {
                     threadRunning = true;
-                    Debug.WriteLine("JoystickWrapper| MonitorSticks starting");
+                    //Debug.WriteLine("JoystickWrapper| MonitorSticks starting");
                     while (threadRunning)
                     {
                         // Iterate subscribed sticks
@@ -379,7 +379,7 @@ namespace JWNameSpace
                         }
                         Thread.Sleep(1);
                     }
-                    Debug.WriteLine("JoystickWrapper| MonitorSticks stopping");
+                    //Debug.WriteLine("JoystickWrapper| MonitorSticks stopping");
                 }));
                 t.Start();
             }
@@ -625,7 +625,7 @@ namespace JWNameSpace
                 if (value == -1)
                     return false;
                 var diff = AngleDiff(value, Angle);
-                Debug.WriteLine(String.Format("JoystickWrapper| Angle = {0}, Value = {1}, Diff = {2}", Angle, value, diff));
+                //Debug.WriteLine(String.Format("JoystickWrapper| Angle = {0}, Value = {1}, Diff = {2}", Angle, value, diff));
                 return value != -1 && AngleDiff(value, Angle) <= Tolerance;
             }
 
