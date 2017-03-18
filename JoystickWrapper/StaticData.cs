@@ -66,7 +66,7 @@ namespace JWNameSpace
 
         private static List<string> xinputAxisIdentifiers = new List<string>()
         {
-            "LeftThumbX", "LeftThumbY", "RightThumbX", "RightThumbY", "LeftTrigger", "RightTrigger"
+            "LeftThumbX", "LeftThumbY", "LeftTrigger", "RightThumbX", "RightThumbY", "RightTrigger"
         };
 
         private static List<GamepadButtonFlags> xinputButtonIdentifiers = new List<GamepadButtonFlags>()
