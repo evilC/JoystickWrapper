@@ -63,7 +63,8 @@ class Monitor {
 	static PovDirections := ["Up", "Right", "Down", "Left"]
 	
 	__New(dev, input_type := ""){
-		this.InputType := input_type
+		this.InputType := input_type	; For now, input type for DirectInput is "", because only xinput api calls have xinput in name
+		this.DisplayType := (input_type = "" ? "DirectInput" : "XInput")
 		this.Device := dev
 		Gui, New, hwndhGui
 		this.hGui := hGui
@@ -96,7 +97,8 @@ class Monitor {
 		Loop % dev.POVs {
 			this.PovLV.Add(, A_Index)
 		}
-		Gui, Show, , % dev.Name
+		title := this.DisplayType == "DirectInput" ? dev.name : "ID " dev.Guid
+		Gui, Show, , % "(" this.DisplayType ") " title
 	}
 	
 	AxisLVEvent(){
