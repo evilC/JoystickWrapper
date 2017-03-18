@@ -94,9 +94,10 @@ namespace JWNameSpace
             return Subscribe((UserIndex)controllerId - 1, subReq, handler, id);
         }
 
-        public bool UnsubscribeXBoxAxis(int controllerId, int axisId, string id = "0")
+        public bool UnSubscribeXboxAxis(int controllerId, int axisId, string id = "0")
         {
-            return true;
+            var subReq = new XInputSubscriptionRequest(XIInputType.Axis, axisId);
+            return UnSubscribe((UserIndex)controllerId - 1, subReq, id);
         }
 
         public bool SubscribeXboxButton(int controllerId, int buttonId, dynamic handler, string id = "0")
@@ -105,9 +106,10 @@ namespace JWNameSpace
             return Subscribe((UserIndex)controllerId - 1, subReq, handler, id);
         }
 
-        public bool UnsubscribeXBoxButton(int controllerId, int buttonId, string id = "0")
+        public bool UnSubscribeXboxButton(int controllerId, int buttonId, string id = "0")
         {
-            return true;
+            var subReq = new XInputSubscriptionRequest(XIInputType.Button, buttonId);
+            return UnSubscribe((UserIndex)controllerId - 1, subReq, id);
         }
 
         public bool SubscribeXboxDpad(int controllerId, int povDirection, dynamic handler, string id = "0")
@@ -116,9 +118,10 @@ namespace JWNameSpace
             return Subscribe((UserIndex)controllerId - 1, subReq, handler, id);
         }
 
-        public bool UnsubscribeXBoxDpad(int controllerId, int povDirection, string id = "0")
+        public bool UnSubscribeXboxDpad(int controllerId, int povDirection, string id = "0")
         {
-            return true;
+            var subReq = new XInputSubscriptionRequest(XIInputType.Dpad, povDirection);
+            return UnSubscribe((UserIndex)controllerId - 1, subReq, id);
         }
         #endregion
 
@@ -237,20 +240,13 @@ namespace JWNameSpace
         #region Private
 
         #region Subscription Methods
+            // DirectInput
         private bool Subscribe(string guid, JoystickOffset offset, dynamic handler, string id, int povDirection = 0)
         {
             // Block the Monitor thread from polling while we update the data structures
             lock (stickSubscriptions.DirectXSticks)
             {
                 return stickSubscriptions.Add(guid, offset, handler, id, povDirection);
-            }
-        }
-
-        private bool Subscribe(UserIndex controllerId, XInputSubscriptionRequest subReq, dynamic handler, string id, int povDirection = 0)
-        {
-            lock (stickSubscriptions.XInputSticks)
-            {
-                return stickSubscriptions.Add(controllerId, subReq, handler, id, povDirection);
             }
         }
 
@@ -262,6 +258,25 @@ namespace JWNameSpace
                 return stickSubscriptions.Remove(guid, offset, id, povDirection);
             }
         }
+
+        // XInput
+        private bool Subscribe(UserIndex controllerId, XInputSubscriptionRequest subReq, dynamic handler, string id, int povDirection = 0)
+        {
+            lock (stickSubscriptions.XInputSticks)
+            {
+                return stickSubscriptions.Add(controllerId, subReq, handler, id, povDirection);
+            }
+        }
+
+        private bool UnSubscribe(UserIndex controllerId, XInputSubscriptionRequest subReq, string id, int povDirection = 0)
+        {
+            // Block the Monitor thread from polling while we update the data structures
+            lock (stickSubscriptions.XInputSticks)
+            {
+                return stickSubscriptions.Remove(controllerId, subReq, id, povDirection);
+            }
+        }
+
         #endregion
 
         #region Subscription Handling Classes
@@ -331,6 +346,19 @@ namespace JWNameSpace
                 return true;
             }
 
+            public bool Remove(string guidStr, JoystickOffset offset, string id, int povDirection = 0)
+            {
+                Guid guid = new Guid(guidStr);
+                if (!DirectXSticks.ContainsKey(guid))
+                {
+                    return false;
+                }
+                var ret = DirectXSticks[guid].Remove(offset, id, povDirection);
+                RemoveStickIfEmpty(guid);
+                return ret;
+            }
+
+
             // XInput
             public bool Add(UserIndex controllerId, XInputSubscriptionRequest subReq, dynamic handler, string subscriberId, int povDirection = 0)
             {
@@ -347,17 +375,17 @@ namespace JWNameSpace
                 return true;
             }
 
-            public bool Remove(string guidStr, JoystickOffset offset, string id, int povDirection = 0)
+            public bool Remove(UserIndex controllerId, XInputSubscriptionRequest subReq, string id, int povDirection = 0)
             {
-                Guid guid = new Guid(guidStr);
-                if (!DirectXSticks.ContainsKey(guid))
+                if (!XInputSticks.ContainsKey(controllerId))
                 {
                     return false;
                 }
-                var ret = DirectXSticks[guid].Remove(offset, id, povDirection);
-                RemoveStickIfEmpty(guid);
+                var ret = XInputSticks[controllerId].Remove(subReq, id, povDirection);
+                RemoveStickIfEmpty(controllerId);
                 return ret;
             }
+
 
             // If a stick has no bindings associated with it, remove it from the Dictionary, so the Monitor thread does not poll it
             private bool RemoveStickIfEmpty(Guid guid)
@@ -365,6 +393,17 @@ namespace JWNameSpace
                 if (DirectXSticks[guid].IsEmpty())
                 {
                     DirectXSticks.Remove(guid);
+                    SetMonitorState();
+                    return true;
+                }
+                return false;
+            }
+
+            private bool RemoveStickIfEmpty(UserIndex controllerId)
+            {
+                if (XInputSticks[controllerId].IsEmpty())
+                {
+                    XInputSticks.Remove(controllerId);
                     SetMonitorState();
                     return true;
                 }
@@ -498,7 +537,7 @@ namespace JWNameSpace
                 var ret = Inputs[offset].Remove(id, povDirection);
                 if (ret)
                 {
-                    if (Inputs[offset].Subscriptions.Count == 0)
+                    if (Inputs[offset].IsEmpty())
                     {
                         Inputs.Remove(offset);
                     }
@@ -750,6 +789,53 @@ namespace JWNameSpace
                 return true;
             }
 
+            public bool Remove(XInputSubscriptionRequest subReq, string subscriberId, int povDirection)
+            {
+                bool ret;
+                switch (subReq.InputType)
+                {
+                    case XIInputType.Axis:
+                        if (!SubscribedAxes.ContainsKey(subReq.InputIndex))
+                        {
+                            return false;
+                        }
+                        ret = SubscribedAxes[subReq.InputIndex].Remove(subscriberId, povDirection);
+                        if (SubscribedAxes[subReq.InputIndex].IsEmpty())
+                        {
+                            SubscribedAxes.Remove(subReq.InputIndex);
+                        }
+                        return ret;
+                    case XIInputType.Button:
+                        if (!SubscribedButtons.ContainsKey(subReq.InputIndex))
+                        {
+                            return false;
+                        }
+                        ret = SubscribedButtons[subReq.InputIndex].Remove(subscriberId, povDirection);
+                        if (SubscribedButtons[subReq.InputIndex].IsEmpty())
+                        {
+                            SubscribedButtons.Remove(subReq.InputIndex);
+                        }
+                        return ret;
+                    case XIInputType.Dpad:
+                        if (!SubscribedDpadDirections.ContainsKey(subReq.InputIndex))
+                        {
+                            return false;
+                        }
+                        ret = SubscribedDpadDirections[subReq.InputIndex].Remove(subscriberId, povDirection);
+                        if (SubscribedDpadDirections[subReq.InputIndex].IsEmpty())
+                        {
+                            SubscribedDpadDirections.Remove(subReq.InputIndex);
+                        }
+                        return ret;
+                }
+                return true;
+            }
+
+            public bool IsEmpty()
+            {
+                return (SubscribedAxes.Count == 0 && SubscribedButtons.Count == 0 && SubscribedDpadDirections.Count == 0);
+            }
+
             public void Poll()
             {
                 var state = controller.GetState();
@@ -797,6 +883,16 @@ namespace JWNameSpace
                 return true;
             }
 
+            public bool Remove(string subscriberID, int povDirection)
+            {
+                if (!Subscriptions.ContainsKey(subscriberID))
+                {
+                    return false;
+                }
+                Subscriptions.Remove(subscriberID);
+                return true;
+            }
+
             public void ProcessPollRecord(int value)
             {
                 if (value != CurrentValue)
@@ -807,6 +903,11 @@ namespace JWNameSpace
                     }
                     CurrentValue = value;
                 }
+            }
+
+            public bool IsEmpty()
+            {
+                return Subscriptions.Count == 0;
             }
         }
 
