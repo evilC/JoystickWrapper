@@ -22,106 +22,106 @@ namespace JWNameSpace
         
         #region DirectInput
         // --------------------------- Subscribe / Unsubscribe methods ----------------------------------------
-        public bool SubscribeAxis(string guid, int index, dynamic handler, string id = "0")
+        public bool SubscribeAxis(string guid, int index, dynamic handler, string subscriberId = "0")
         {
             if (index < 1 || index > 8)
                 return false;
             var offset = inputMappings[InputType.AXIS][index - 1];
-            return Subscribe(guid, offset, handler, id);
+            return Subscribe(guid, offset, handler, subscriberId);
         }
 
-        public bool UnSubscribeAxis(string guid, int index, string id = "0")
+        public bool UnSubscribeAxis(string guid, int index, string subscriberId = "0")
         {
             if (index < 1 || index > 8)
                 return false;
             var offset = inputMappings[InputType.AXIS][index - 1];
-            return UnSubscribe(guid, offset, id);
+            return UnSubscribe(guid, offset, subscriberId);
         }
 
-        public bool SubscribeButton(string guid, int index, dynamic handler, string id = "0")
+        public bool SubscribeButton(string guid, int index, dynamic handler, string subscriberId = "0")
         {
             if (index < 1 || index > 128)
                 return false;
             var offset = inputMappings[InputType.BUTTON][index - 1];
-            return Subscribe(guid, offset, handler, id);
+            return Subscribe(guid, offset, handler, subscriberId);
         }
 
-        public bool UnSubscribeButton(string guid, int index, string id = "0")
+        public bool UnSubscribeButton(string guid, int index, string subscriberId = "0")
         {
             if (index < 1 || index > 128)
                 return false;
             var offset = inputMappings[InputType.BUTTON][index - 1];
-            return UnSubscribe(guid, offset, id);
+            return UnSubscribe(guid, offset, subscriberId);
         }
 
-        public bool SubscribePov(string guid, int index, dynamic handler, string id = "0")
+        public bool SubscribePov(string guid, int index, dynamic handler, string subscriberId = "0")
         {
             if (index < 1 || index > 4)
                 return false;
             var offset = inputMappings[InputType.POV][index - 1];
-            return Subscribe(guid, offset, handler, id);
+            return Subscribe(guid, offset, handler, subscriberId);
         }
 
-        public bool UnSubscribePov(string guid, int index, string id = "0")
+        public bool UnSubscribePov(string guid, int index, string subscriberId = "0")
         {
             if (index < 1 || index > 4)
                 return false;
             var offset = inputMappings[InputType.POV][index - 1];
-            return UnSubscribe(guid, offset, id);
+            return UnSubscribe(guid, offset, subscriberId);
         }
 
-        public bool SubscribePovDirection(string guid, int index, int povDirection, dynamic handler, string id = "0")
+        public bool SubscribePovDirection(string guid, int index, int povDirection, dynamic handler, string subscriberId = "0")
         {
             if (index < 1 || index > 4 || povDirection < 1 || povDirection > 4)
                 return false;
             var offset = inputMappings[InputType.POV][index - 1];
-            return Subscribe(guid, offset, handler, id, povDirection);
+            return Subscribe(guid, offset, handler, subscriberId, povDirection);
         }
 
-        public bool UnSubscribePovDirection(string guid, int index, int povDirection, string id = "0")
+        public bool UnSubscribePovDirection(string guid, int index, int povDirection, string subscriberId = "0")
         {
             if (index < 1 || index > 4 || povDirection < 1 || povDirection > 4)
                 return false;
             var offset = inputMappings[InputType.POV][index - 1];
-            return UnSubscribe(guid, offset, id, povDirection);
+            return UnSubscribe(guid, offset, subscriberId, povDirection);
         }
         #endregion
 
         #region XInput
-        public bool SubscribeXboxAxis(int controllerId, int axisId, dynamic handler, string id = "0")
+        public bool SubscribeXboxAxis(int controllerId, int axisId, dynamic handler, string subscriberId = "0")
         {
             var subReq = new XInputSubscriptionRequest(XIInputType.Axis, axisId);
-            return Subscribe((UserIndex)controllerId - 1, subReq, handler, id);
+            return Subscribe((UserIndex)controllerId - 1, subReq, handler, subscriberId);
         }
 
-        public bool UnSubscribeXboxAxis(int controllerId, int axisId, string id = "0")
+        public bool UnSubscribeXboxAxis(int controllerId, int axisId, string subscriberId = "0")
         {
             var subReq = new XInputSubscriptionRequest(XIInputType.Axis, axisId);
-            return UnSubscribe((UserIndex)controllerId - 1, subReq, id);
+            return UnSubscribe((UserIndex)controllerId - 1, subReq, subscriberId);
         }
 
-        public bool SubscribeXboxButton(int controllerId, int buttonId, dynamic handler, string id = "0")
+        public bool SubscribeXboxButton(int controllerId, int buttonId, dynamic handler, string subscriberId = "0")
         {
             var subReq = new XInputSubscriptionRequest(XIInputType.Button, buttonId);
-            return Subscribe((UserIndex)controllerId - 1, subReq, handler, id);
+            return Subscribe((UserIndex)controllerId - 1, subReq, handler, subscriberId);
         }
 
-        public bool UnSubscribeXboxButton(int controllerId, int buttonId, string id = "0")
+        public bool UnSubscribeXboxButton(int controllerId, int buttonId, string subscriberId = "0")
         {
             var subReq = new XInputSubscriptionRequest(XIInputType.Button, buttonId);
-            return UnSubscribe((UserIndex)controllerId - 1, subReq, id);
+            return UnSubscribe((UserIndex)controllerId - 1, subReq, subscriberId);
         }
 
-        public bool SubscribeXboxDpad(int controllerId, int povDirection, dynamic handler, string id = "0")
+        public bool SubscribeXboxDpad(int controllerId, int povDirection, dynamic handler, string subscriberId = "0")
         {
             var subReq = new XInputSubscriptionRequest(XIInputType.Dpad, povDirection);
-            return Subscribe((UserIndex)controllerId - 1, subReq, handler, id);
+            return Subscribe((UserIndex)controllerId - 1, subReq, handler, subscriberId);
         }
 
-        public bool UnSubscribeXboxDpad(int controllerId, int povDirection, string id = "0")
+        public bool UnSubscribeXboxDpad(int controllerId, int povDirection, string subscriberId = "0")
         {
             var subReq = new XInputSubscriptionRequest(XIInputType.Dpad, povDirection);
-            return UnSubscribe((UserIndex)controllerId - 1, subReq, id);
+            return UnSubscribe((UserIndex)controllerId - 1, subReq, subscriberId);
         }
         #endregion
 
