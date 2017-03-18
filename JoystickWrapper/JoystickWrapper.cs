@@ -18,6 +18,7 @@ namespace JWNameSpace
         // To insulate end-users from unforseen behaviour, avoid overloading API endpoints
 
         #region Public API Endpoints
+
         #region Subscription Methods
         
         #region DirectInput
@@ -112,23 +113,26 @@ namespace JWNameSpace
             return UnSubscribe((UserIndex)controllerId - 1, subReq, subscriberId);
         }
 
-        public bool SubscribeXboxDpad(int controllerId, int povDirection, dynamic handler, string subscriberId = "0")
+        public bool SubscribeXboxPovDirection(int controllerId, int povDirection, dynamic handler, string subscriberId = "0")
         {
             var subReq = new XInputSubscriptionRequest(XIInputType.Dpad, povDirection);
             return Subscribe((UserIndex)controllerId - 1, subReq, handler, subscriberId);
         }
 
-        public bool UnSubscribeXboxDpad(int controllerId, int povDirection, string subscriberId = "0")
+        public bool UnSubscribeXboxPovDirection(int controllerId, int povDirection, string subscriberId = "0")
         {
             var subReq = new XInputSubscriptionRequest(XIInputType.Dpad, povDirection);
             return UnSubscribe((UserIndex)controllerId - 1, subReq, subscriberId);
         }
         #endregion
 
-        #endregion
+        #endregion Subscription Methods
 
         #region Querying Methods
         // ------------------------------ Querying Methods ------------------------------------
+
+        #region DirectInput
+
         // Gets a list of available devices and their caps
         public DeviceInfo[] GetDevices()
         {
@@ -185,7 +189,28 @@ namespace JWNameSpace
             }
             return "";
         }
+
         #endregion
+
+        #region XInput
+
+        public DeviceInfo[] GetXInputDevices()
+        {
+            List<DeviceInfo> deviceList = new List<DeviceInfo>();
+            for (var controllerID = 0; controllerID < 4; controllerID++)
+            {
+                var controller = new Controller((UserIndex)controllerID);
+                if (controller.IsConnected)
+                {
+                    deviceList.Add(new DeviceInfo(controller));
+                }
+            }
+            return deviceList.ToArray();
+        }
+
+        #endregion
+
+        #endregion Querying Methods
 
         #region Returned DataTypes
         // ---------------------------- Publicly visible datatypes ---------------------------------
@@ -229,18 +254,32 @@ namespace JWNameSpace
                 joystick.Unacquire();
             }
 
+            // XInput
+            public DeviceInfo(Controller controller)
+            {
+                Axes = 6;
+                Buttons = 10;
+                POVs = 1;
+                SupportedAxes = new int[] { 1, 2, 3, 4, 5, 6 };
+                Guid = (Convert.ToInt32(controller.UserIndex)+1).ToString();
+                Name = "Controller (XBOX 360 For Windows)";
+            }
+
             public string Name { get; set; }
             public string Guid { get; set; }
         }
         #endregion
-        #endregion
+
+        #endregion Public API Endpoints
 
         // ================================================== PRIVATE  ==============================================================
 
         #region Private
 
         #region Subscription Methods
-            // DirectInput
+
+        #region DirectInput
+
         private bool Subscribe(string guid, JoystickOffset offset, dynamic handler, string id, int povDirection = 0)
         {
             // Block the Monitor thread from polling while we update the data structures
@@ -258,8 +297,10 @@ namespace JWNameSpace
                 return stickSubscriptions.Remove(guid, offset, id, povDirection);
             }
         }
+        #endregion DirectInput
 
-        // XInput
+        #region XInput
+
         private bool Subscribe(UserIndex controllerId, XInputSubscriptionRequest subReq, dynamic handler, string id, int povDirection = 0)
         {
             lock (stickSubscriptions.XInputSticks)
@@ -277,11 +318,14 @@ namespace JWNameSpace
             }
         }
 
-        #endregion
+        #endregion XInput
+
+        #endregion Subscription Methods
 
         #region Subscription Handling Classes
-        // ------------------------------------------ Subscription Handling -------------------------------------------------
+
         #region Common
+
         #region All Sticks
         // Handles storing subscriptions for (and processing input of) a collection of joysticks
         private class SubscribedSticks
@@ -296,6 +340,7 @@ namespace JWNameSpace
                 XInputSticks = new Dictionary<UserIndex, SubscribedXIStick>();
             }
 
+            // DirectInput
             public bool RegisterStick(string guidStr)
             {
                 Guid guid = new Guid(guidStr);
@@ -316,6 +361,7 @@ namespace JWNameSpace
                 return true;
             }
 
+            // XInput
             public bool RegisterStick(UserIndex player)
             {
                 var controller = new Controller(player);
@@ -329,7 +375,7 @@ namespace JWNameSpace
                 return true;
             }
 
-            // DirectX
+            // DirectInput
             public bool Add(string guidStr, JoystickOffset offset, dynamic handler, string id, int povDirection = 0)
             {
                 if (!RegisterStick(guidStr))
@@ -456,7 +502,7 @@ namespace JWNameSpace
                 t.Start();
             }
         }
-        #endregion
+        #endregion All Sticks
 
         #region Subscription
         // Holds information on a given subscription
@@ -471,9 +517,10 @@ namespace JWNameSpace
         }
         #endregion
 
-        #endregion
+        #endregion Common
 
         #region DirectInput
+
         #region Single Stick
         // Handles storing subscriptions for (and processing input of) a specific joystick
         private class SubscribedDirectXStick
@@ -741,6 +788,9 @@ namespace JWNameSpace
         #endregion
 
         #region XInput
+
+        #region Single Stick
+
         private class SubscribedXIStick
         {
             public Controller controller;
@@ -859,6 +909,10 @@ namespace JWNameSpace
             }
         }
 
+        #endregion
+
+        #region Single Input
+
         private class SubscribedXIInput
         {
             public Dictionary<string, Subscription> Subscriptions { get; set; }
@@ -911,6 +965,10 @@ namespace JWNameSpace
             }
         }
 
+        #endregion
+
+        #region Misc
+
         private class XInputSubscriptionRequest
         {
             public XIInputType InputType;
@@ -924,7 +982,9 @@ namespace JWNameSpace
 
         #endregion
 
-        #endregion
+        #endregion XInput
+
+        #endregion Subscription Handling Classes
 
         #region Helper Methods
         private bool IsStickType(DeviceInstance deviceInstance)
@@ -938,6 +998,6 @@ namespace JWNameSpace
         }
         #endregion
 
-        #endregion
+        #endregion Private
     }
 }

@@ -8,14 +8,27 @@ Monitors := {}
 #Include JoystickWrapper.ahk
 global jw := new JoystickWrapper("JoystickWrapper.dll")
 
+; DirectInput
 global DeviceList := jw.GetDevices()
+Gui, Add, Text, w300 Center, DirectInput Devices
 DevicesLV := new WrappedLV(hMain, "w300", "Name|Guid")
 DevicesLV.SetColumnWidth(1, 150)
 for i, dev in DeviceList {
 	DevicesLV.Add("", dev.Name, dev.Guid)
 }
 Gui, Add, Button, w300 gMonitorDevice, Monitor Selected Device (Can be repeated)
-Gui, % hMain ":Show", x0 y0
+
+; XInput
+Gui, Add, Text, w300 y+20 Center, XInput Devices
+global XinputDeviceList := jw.GetXInputDevices()
+XinputDevicesLV := new WrappedLV(hMain, "w300", "Name|ID")
+XinputDevicesLV.SetColumnWidth(1, 150)
+for i, dev in XinputDeviceList {
+	XinputDevicesLV.Add("", dev.Name, dev.Guid)
+}
+Gui, Add, Button, w300 gMonitorXinputDevice, Monitor Selected Device (Can be repeated)
+
+Gui, % hMain ":Show"
 return
 
 
@@ -24,6 +37,13 @@ MonitorDevice:
 	if (!selected_device)
 		return
 	Monitors[guid] := new Monitor(DeviceList[selected_device])
+	return
+
+MonitorXinputDevice:
+	selected_device := XinputDevicesLV.GetCurrentText(2)
+	if (!selected_device)
+		return
+	Monitors[guid] := new Monitor(XinputDeviceList[selected_device], "Xbox")
 	return
 
 GuiClose(hwnd){
@@ -42,14 +62,16 @@ class Monitor {
 	static AxisList := ["X", "Y", "Z", "Rx", "Ry", "Rz", "S0", "S1"]
 	static PovDirections := ["Up", "Right", "Down", "Left"]
 	
-	__New(dev){
+	__New(dev, input_type := ""){
+		this.InputType := input_type
 		this.Device := dev
 		Gui, New, hwndhGui
 		this.hGui := hGui
 		
 		this.AxisLV := new WrappedLV(hGui, "w50 R8 AltSubmit Checked", "Axis", this.AxisLVEvent.Bind(this))
 		this.ButtonLV := new WrappedLV(hGui, "x+5 yp w60 R8 AltSubmit Checked", "Button", this.ButtonLVEvent.Bind(this))
-		this.PovLV := new WrappedLV(hGui, "x+5 w50 R4 AltSubmit Checked", "Pov", this.PovLVEvent.Bind(this))
+		if (this.InputType == "")
+			this.PovLV := new WrappedLV(hGui, "x+5 w50 R4 AltSubmit Checked", "Pov", this.PovLVEvent.Bind(this))
 		this.PovDirectionLVs := []
 		
 		Loop % dev.POVs {
@@ -74,7 +96,7 @@ class Monitor {
 		Loop % dev.POVs {
 			this.PovLV.Add(, A_Index)
 		}
-		Gui, Show, x0 y0, % dev.Name
+		Gui, Show, , % dev.Name
 	}
 	
 	AxisLVEvent(){
@@ -84,9 +106,9 @@ class Monitor {
 		row := A_EventInfo
 		ax := this.Device.SupportedAxes[row]
 		if (state)
-			jw.SubscribeAxis(this.Device.Guid, ax, this.InputEvent.Bind(this, "Axis " this.AxisList[ax]), this.hGui)
+			jw["Subscribe" this.InputType "Axis"](this.Device.Guid, ax, this.InputEvent.Bind(this, "Axis " this.AxisList[ax]), this.hGui)
 		else
-			jw.UnSubscribeAxis(this.Device.Guid, ax, this.hGui)
+			jw["UnSubscribe" this.InputType "Axis"](this.Device.Guid, ax, this.hGui)
 	}
 	
 	ButtonLVEvent(){
@@ -95,9 +117,9 @@ class Monitor {
 		state := InStr(ErrorLevel, "C", true) ? 1 : 0
 		row := A_EventInfo
 		if (state)
-			jw.SubscribeButton(this.Device.Guid, row, this.InputEvent.Bind(this, "Button " row), this.hGui)
+			jw["Subscribe" this.InputType "Button"](this.Device.Guid, row, this.InputEvent.Bind(this, "Button " row), this.hGui)
 		else
-			jw.UnSubscribeButton(this.Device.Guid, row, this.hGui)
+			jw["Subscribe" this.InputType "Button"](this.Device.Guid, row, this.hGui)
 	}
 	
 	PovLVEvent(){
@@ -106,9 +128,9 @@ class Monitor {
 		state := InStr(ErrorLevel, "C", true) ? 1 : 0
 		row := A_EventInfo
 		if (state)
-			jw.SubscribePov(this.Device.Guid, row, this.InputEvent.Bind(this, "POV " row), this.hGui)
+			jw["Subscribe" this.InputType "Pov"](this.Device.Guid, row, this.InputEvent.Bind(this, "POV " row), this.hGui)
 		else
-			jw.UnSubscribePov(this.Device.Guid, row, this.hGui)
+			jw["Subscribe" this.InputType "Pov"](this.Device.Guid, row, this.hGui)
 	}
 	
 	PovDirectionLVEvent(pov_id){
@@ -117,9 +139,9 @@ class Monitor {
 		state := InStr(ErrorLevel, "C", true) ? 1 : 0
 		row := A_EventInfo
 		if (state)
-			jw.SubscribePovDirection(this.Device.Guid, pov_id, row, this.InputEvent.Bind(this, "POV " pov_id ", Direction " this.PovDirections[row]), this.hGui)
+			ret := jw["Subscribe" this.InputType "PovDirection"](this.Device.Guid+0, pov_id, row, this.InputEvent.Bind(this, "POV " pov_id ", Direction " this.PovDirections[row]), this.hGui)
 		else
-			jw.UnSubscribePovDirection(this.Device.Guid, pov_id, row, this.hGui)
+			jw["Subscribe" this.InputType "PovDirection"](this.Device.Guid+0, pov_id, row, this.hGui)
 	}
 	
 	InputEvent(input, value){

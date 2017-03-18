@@ -51,7 +51,19 @@ class JoystickWrapper {
 	UnSubscribePovDirection(guid, index, povDirection, id := 0){
 		this.Interface.UnSubscribePovDirection(guid, index, povDirection, id)
 	}
+
+	GetDevices(){
+		return this._ProcessDeviceList(this.Interface.GetDevices())
+	}
 	
+	GetAnyDeviceGuid(){
+		return this.Interface.GetDevices()[0].Guid
+	}
+	
+	GetDeviceGuidByName(name){
+		return this.Interface.GetDeviceGuidByName(name)
+	}
+
 	; --- Xinput ---
 	SubscribeXboxAxis(controllerId, index, callback, id := 0){
 		this.Interface.SubscribeXboxAxis(controllerId, index, callback, id)
@@ -69,18 +81,21 @@ class JoystickWrapper {
 		this.Interface.UnSubscribeXboxButton(controllerId, index, id)
 	}
 	
-	SubscribeXboxDpad(controllerId, index, povDirection, callback, id := 0){
-		this.Interface.SubscribeXboxDpad(controllerId, index, povDirection, callback, id)
+	SubscribeXboxPovDirection(controllerId, index, povDirection, callback, id := 0){
+		this.Interface.SubscribeXboxPovDirection(controllerId, povDirection, callback, id)
 	}
 	
-	UnSubscribeXboxDpad(controllerId, index, povDirection, id := 0){
-		this.Interface.UnSubscribeXboxDpad(controllerId, index, povDirection, id)
+	UnSubscribeXboxPovDirection(controllerId, index, povDirection, id := 0){
+		this.Interface.UnSubscribeXboxPovDirection(controllerId, povDirection, id)
 	}
 	
-
-	GetDevices(){
+	GetXInputDevices(){
+		return this._ProcessDeviceList(this.Interface.GetXInputDevices())
+	}
+	
+	; --- Common ---
+	_ProcessDeviceList(_device_list){
 		device_list := {}
-		_device_list := this.Interface.GetDevices()
 		ct := _device_list.MaxIndex()+1
 		Loop % ct {
 			dev := _device_list[A_Index - 1]
@@ -91,14 +106,6 @@ class JoystickWrapper {
 			}
 		}
 		return device_list
-	}
-	
-	GetAnyDeviceGuid(){
-		return this.Interface.GetDevices()[0].Guid
-	}
-	
-	GetDeviceGuidByName(name){
-		return this.Interface.GetDeviceGuidByName(name)
 	}
 
 }
