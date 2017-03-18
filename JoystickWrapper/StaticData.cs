@@ -60,9 +60,19 @@ namespace JWNameSpace
             }
         };
 
-        private static List<string> xinputAxes = new List<string>()
+        private enum xinputAxes {  LeftThumbX = 1, LeftThumbY, RightThumbX, RightThumbY, LeftTrigger, RightTrigger }
+        private enum xinputButtons { A = 1, B, X, Y, L, R, Back, Start, LS, RS }
+
+        private static List<string> xinputAxisIdentifiers = new List<string>()
         {
             "LeftThumbX", "LeftThumbY", "RightThumbX", "RightThumbY", "LeftTrigger", "RightTrigger"
+        };
+
+        private static List<GamepadButtonFlags> xinputButtonIdentifiers = new List<GamepadButtonFlags>()
+        {
+            GamepadButtonFlags.A, GamepadButtonFlags.B, GamepadButtonFlags.X, GamepadButtonFlags.Y
+            , GamepadButtonFlags.LeftShoulder, GamepadButtonFlags.RightShoulder, GamepadButtonFlags.Back, GamepadButtonFlags.Start
+            , GamepadButtonFlags.LeftThumb, GamepadButtonFlags.RightThumb
         };
     }
 }

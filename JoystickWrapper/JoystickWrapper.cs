@@ -86,7 +86,14 @@ namespace JWNameSpace
 
         public bool SubscribeXboxAxis(int controllerId, int axisId, dynamic handler, string id = "0")
         {
-            return Subscribe((UserIndex)controllerId-1, axisId, handler, id);
+            var subReq = new XInputSubscriptionRequest(XIInputType.Axis, axisId);
+            return Subscribe((UserIndex)controllerId - 1, subReq, handler, id);
+        }
+
+        public bool SubscribeXboxButton(int controllerId, int buttonId, dynamic handler, string id = "0")
+        {
+            var subReq = new XInputSubscriptionRequest(XIInputType.Button, buttonId);
+            return Subscribe((UserIndex)controllerId - 1, subReq, handler, id);
         }
         #endregion
 
@@ -210,11 +217,11 @@ namespace JWNameSpace
             }
         }
 
-        private bool Subscribe(UserIndex controllerId, int inputId, dynamic handler, string id, int povDirection = 0)
+        private bool Subscribe(UserIndex controllerId, XInputSubscriptionRequest subReq, dynamic handler, string id, int povDirection = 0)
         {
             lock (stickSubscriptions.XInputSticks)
             {
-                return stickSubscriptions.Add(controllerId, inputId, handler, id, povDirection);
+                return stickSubscriptions.Add(controllerId, subReq, handler, id, povDirection);
             }
         }
 
@@ -248,13 +255,13 @@ namespace JWNameSpace
         private class SubscribedSticks
         {
             public Dictionary<Guid, SubscribedDirectXStick> DirectXSticks { get; set; }
-            public Dictionary<UserIndex, SubscribedXInputStick> XInputSticks { get; set; }
+            public Dictionary<UserIndex, SubscribedXIStick> XInputSticks { get; set; }
             public bool threadRunning = false;
 
             public SubscribedSticks()
             {
                 DirectXSticks = new Dictionary<Guid, SubscribedDirectXStick>();
-                XInputSticks = new Dictionary<UserIndex, SubscribedXInputStick>();
+                XInputSticks = new Dictionary<UserIndex, SubscribedXIStick>();
             }
 
             public bool RegisterStick(string guidStr)
@@ -282,8 +289,11 @@ namespace JWNameSpace
                 var controller = new Controller(player);
                 if (!controller.IsConnected)
                     return false;
-                var subscribedController = new SubscribedXInputStick(player);
-                XInputSticks.Add(player, subscribedController);
+                if (!XInputSticks.ContainsKey(player))
+                {
+                    var subscribedController = new SubscribedXIStick(player);
+                    XInputSticks.Add(player, subscribedController);
+                }
                 return true;
             }
 
@@ -305,13 +315,13 @@ namespace JWNameSpace
             }
 
             // XInput
-            public bool Add(UserIndex controllerId, int axisId, dynamic handler, string subscriberId, int povDirection = 0)
+            public bool Add(UserIndex controllerId, XInputSubscriptionRequest subReq, dynamic handler, string subscriberId, int povDirection = 0)
             {
                 if (!RegisterStick(controllerId))
                 {
                     return false;
                 }
-                if (!XInputSticks[controllerId].Add(axisId, handler, subscriberId, povDirection))
+                if (!XInputSticks[controllerId].Add(subReq, handler, subscriberId, povDirection))
                 {
                     //RemoveStickIfEmpty(controllerId);   // If the stick was valid, but non-existent axis or button, then remove the stick again if it is empty
                     return false;
@@ -397,13 +407,13 @@ namespace JWNameSpace
         private class SubscribedDirectXStick
         {
             public Dictionary<JoystickOffset, bool> SupportedInputs { get; set; }
-            public Dictionary<JoystickOffset, SubscribedInput> Inputs { get; set; }
+            public Dictionary<JoystickOffset, SubscribedDIInput> Inputs { get; set; }
             public Joystick joystick;
 
             public SubscribedDirectXStick(Joystick passedStick)
             {
                 joystick = passedStick;
-                Inputs = new Dictionary<JoystickOffset, SubscribedInput>();
+                Inputs = new Dictionary<JoystickOffset, SubscribedDIInput>();
                 SupportedInputs = new Dictionary<JoystickOffset, bool>();
                 
                 // Set BufferSize in order to use buffered data.
@@ -441,7 +451,7 @@ namespace JWNameSpace
                     return false;
                 if (!Inputs.ContainsKey(offset))
                 {
-                    Inputs.Add(offset, new SubscribedInput());
+                    Inputs.Add(offset, new SubscribedDIInput());
                 }
                 return Inputs[offset].Add(handler, id, povDirection);
             }
@@ -487,12 +497,12 @@ namespace JWNameSpace
 
         #region Single Input
         // Handles storing subscriptions for (and processing input of) a specific input on a specific joystick
-        private class SubscribedInput
+        private class SubscribedDIInput
         {
             public Dictionary<string, Subscription> Subscriptions { get; set; }
             public Dictionary<int, SubscribedPovDirection> PovDirectionSubscriptions { get; set; }
 
-            public SubscribedInput()
+            public SubscribedDIInput()
             {
                 Subscriptions = new Dictionary<string, Subscription>(StringComparer.OrdinalIgnoreCase);
                 PovDirectionSubscriptions = new Dictionary<int, SubscribedPovDirection>();
@@ -672,31 +682,129 @@ namespace JWNameSpace
         #endregion
 
         #region XInput
-        private class SubscribedXInputStick
+        private class SubscribedXIStick
         {
             public Controller controller;
-            private dynamic tempCallback;
-            private int tempAxisId;
+            public Dictionary<int, SubscribedXIInput> SubscribedAxes { get; set; }
+            public Dictionary<int, SubscribedXIInput> SubscribedButtons { get; set; }
 
-            public SubscribedXInputStick(UserIndex controllerId)
+            public SubscribedXIStick(UserIndex controllerId)
             {
                 controller = new Controller(controllerId);
+                SubscribedAxes = new Dictionary<int, SubscribedXIInput>();
+                SubscribedButtons = new Dictionary<int, SubscribedXIInput>();
             }
 
-            public bool Add(int axisId, dynamic handler, string subscriberId, int povDirection)
+            public bool Add(XInputSubscriptionRequest subReq, dynamic handler, string subscriberId, int povDirection)
             {
-                tempCallback = handler;
-                tempAxisId = axisId;
+                switch (subReq.InputType)
+                {
+                    case XIInputType.Axis:
+                        //var axisId = (xinputAxes)subReq.InputIndex;
+                        var axisId = subReq.InputIndex;
+                        if (!SubscribedAxes.ContainsKey(axisId))
+                        {
+                            SubscribedAxes.Add(axisId, new SubscribedXIInput());
+                        }
+                        SubscribedAxes[axisId].Add(handler, subscriberId, povDirection);
+                        break;
+                    case XIInputType.Button:
+                        var buttonId = subReq.InputIndex;
+                        if (!SubscribedButtons.ContainsKey(buttonId))
+                        {
+                            SubscribedButtons.Add(buttonId, new SubscribedXIInput());
+                        }
+                        SubscribedButtons[buttonId].Add(handler, subscriberId, povDirection);
+                        break;
+                }
                 return true;
             }
 
             public void Poll()
             {
                 var state = controller.GetState();
-                var ax = Convert.ToInt32(state.Gamepad.GetType().GetField(xinputAxes[tempAxisId-1]).GetValue(state.Gamepad));
-                tempCallback(ax);
+                foreach (var subscribedAxis in SubscribedAxes)
+                {
+                    var value = Convert.ToInt32(state.Gamepad.GetType().GetField(xinputAxisIdentifiers[subscribedAxis.Key-1]).GetValue(state.Gamepad));
+                    subscribedAxis.Value.ProcessPollRecord(value);
+                }
+                foreach (var subscribedButton in SubscribedButtons)
+                {
+                    var flag = state.Gamepad.Buttons & xinputButtonIdentifiers[subscribedButton.Key - 1];
+                    var value = Convert.ToInt32(flag != GamepadButtonFlags.None);
+                    subscribedButton.Value.ProcessPollRecord(value);
+                }
             }
         }
         #endregion
+
+        private class SubscribedXIInput
+        {
+            public Dictionary<string, Subscription> Subscriptions { get; set; }
+            public Dictionary<int, SubscribedPovDirection> PovDirectionSubscriptions { get; set; }
+            public int CurrentValue { get; set; }
+
+            public SubscribedXIInput()
+            {
+                Subscriptions = new Dictionary<string, Subscription>(StringComparer.OrdinalIgnoreCase);
+                PovDirectionSubscriptions = new Dictionary<int, SubscribedPovDirection>();
+                CurrentValue = 0;
+            }
+
+            public bool Add(dynamic handler, string subscriberID, int povDirection = 0)
+            {
+                if (povDirection == 0)
+                {
+                    // Regular mapping
+                    if (Subscriptions.ContainsKey(subscriberID))
+                    {
+                        Subscriptions[subscriberID].Callback = handler;
+                    }
+                    else
+                    {
+                        Subscriptions.Add(subscriberID, new Subscription(handler));
+                    }
+                    return true;
+                }
+                else
+                {
+                    //Pov Direction Mapping
+                    if (povDirection < 1 || povDirection > 4)
+                    {
+                        return false;
+                    }
+                    if (!PovDirectionSubscriptions.ContainsKey(povDirection))
+                    {
+                        PovDirectionSubscriptions.Add(povDirection, new SubscribedPovDirection(povDirection));
+                    }
+                    return PovDirectionSubscriptions[povDirection].Add(subscriberID, handler);
+                }
+            }
+
+            public void ProcessPollRecord(int value)
+            {
+                if (value != CurrentValue)
+                {
+                    foreach (var sub in Subscriptions)
+                    {
+                        sub.Value.Callback(value);
+                    }
+                    CurrentValue = value;
+                }
+            }
+        }
+
+        public enum XIInputType { Axis, Button }
+
+        private class XInputSubscriptionRequest
+        {
+            public XIInputType InputType;
+            public int InputIndex;
+            public XInputSubscriptionRequest(XIInputType inputType, int inputIndex)
+            {
+                InputType = inputType;
+                InputIndex = inputIndex;
+            }
+        }
     }
 }
