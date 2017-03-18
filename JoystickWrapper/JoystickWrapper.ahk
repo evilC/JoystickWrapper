@@ -19,6 +19,7 @@ class JoystickWrapper {
 		this.Interface := asm.CreateInstance("JWNameSpace.JoystickWrapper")
 	}
 	
+	; --- DirectInput ---
 	SubscribeAxis(guid, index, callback, id := 0){
 		this.Interface.SubscribeAxis(guid, index, callback, id)
 	}
@@ -50,11 +51,51 @@ class JoystickWrapper {
 	UnSubscribePovDirection(guid, index, povDirection, id := 0){
 		this.Interface.UnSubscribePovDirection(guid, index, povDirection, id)
 	}
-	
 
 	GetDevices(){
+		return this._ProcessDeviceList(this.Interface.GetDevices())
+	}
+	
+	GetAnyDeviceGuid(){
+		return this.Interface.GetDevices()[0].Guid
+	}
+	
+	GetDeviceGuidByName(name){
+		return this.Interface.GetDeviceGuidByName(name)
+	}
+
+	; --- Xinput ---
+	SubscribeXboxAxis(controllerId, index, callback, id := 0){
+		this.Interface.SubscribeXboxAxis(controllerId, index, callback, id)
+	}
+	
+	UnSubscribeXboxAxis(controllerId, index, id := 0){
+		this.Interface.UnSubscribeXboxAxis(controllerId, index, id)
+	}
+	
+	SubscribeXboxButton(controllerId, index, callback, id := 0){
+		this.Interface.SubscribeXboxButton(controllerId, index, callback, id)
+	}
+	
+	UnSubscribeXboxButton(controllerId, index, id := 0){
+		this.Interface.UnSubscribeXboxButton(controllerId, index, id)
+	}
+	
+	SubscribeXboxPovDirection(controllerId, index, povDirection, callback, id := 0){
+		this.Interface.SubscribeXboxPovDirection(controllerId, povDirection, callback, id)
+	}
+	
+	UnSubscribeXboxPovDirection(controllerId, index, povDirection, id := 0){
+		this.Interface.UnSubscribeXboxPovDirection(controllerId, povDirection, id)
+	}
+	
+	GetXInputDevices(){
+		return this._ProcessDeviceList(this.Interface.GetXInputDevices())
+	}
+	
+	; --- Common ---
+	_ProcessDeviceList(_device_list){
 		device_list := {}
-		_device_list := this.Interface.GetDevices()
 		ct := _device_list.MaxIndex()+1
 		Loop % ct {
 			dev := _device_list[A_Index - 1]
@@ -65,14 +106,6 @@ class JoystickWrapper {
 			}
 		}
 		return device_list
-	}
-	
-	GetAnyDeviceGuid(){
-		return this.Interface.GetDevices()[0].Guid
-	}
-	
-	GetDeviceGuidByName(name){
-		return this.Interface.GetDeviceGuidByName(name)
 	}
 
 }

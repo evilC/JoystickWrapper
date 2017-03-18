@@ -1,4 +1,5 @@
 ﻿using SharpDX.DirectInput;
+using SharpDX.XInput;
 using System.Collections.Generic;
 
 namespace JWNameSpace
@@ -57,6 +58,27 @@ namespace JWNameSpace
                 }
 
             }
+        };
+
+        public enum XIInputType { Axis, Button, Dpad }
+        private enum xinputAxes {  LeftThumbX = 1, LeftThumbY, RightThumbX, RightThumbY, LeftTrigger, RightTrigger }
+        private enum xinputButtons { A = 1, B, X, Y, L, R, Back, Start, LS, RS }
+
+        private static List<string> xinputAxisIdentifiers = new List<string>()
+        {
+            "LeftThumbX", "LeftThumbY", "LeftTrigger", "RightThumbX", "RightThumbY", "RightTrigger"
+        };
+
+        private static List<GamepadButtonFlags> xinputButtonIdentifiers = new List<GamepadButtonFlags>()
+        {
+            GamepadButtonFlags.A, GamepadButtonFlags.B, GamepadButtonFlags.X, GamepadButtonFlags.Y
+            , GamepadButtonFlags.LeftShoulder, GamepadButtonFlags.RightShoulder, GamepadButtonFlags.Back, GamepadButtonFlags.Start
+            , GamepadButtonFlags.LeftThumb, GamepadButtonFlags.RightThumb
+        };
+
+        private static List<GamepadButtonFlags> xinputDpadDirectionIdentifiers = new List<GamepadButtonFlags>()
+        {
+            GamepadButtonFlags.DPadUp, GamepadButtonFlags.DPadRight, GamepadButtonFlags.DPadDown, GamepadButtonFlags.DPadLeft
         };
     }
 }
