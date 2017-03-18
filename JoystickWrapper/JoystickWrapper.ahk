@@ -19,6 +19,7 @@ class JoystickWrapper {
 		this.Interface := asm.CreateInstance("JWNameSpace.JoystickWrapper")
 	}
 	
+	; --- DirectInput ---
 	SubscribeAxis(guid, index, callback, id := 0){
 		this.Interface.SubscribeAxis(guid, index, callback, id)
 	}
@@ -49,6 +50,31 @@ class JoystickWrapper {
 	
 	UnSubscribePovDirection(guid, index, povDirection, id := 0){
 		this.Interface.UnSubscribePovDirection(guid, index, povDirection, id)
+	}
+	
+	; --- Xinput ---
+	SubscribeXboxAxis(controllerId, index, callback, id := 0){
+		this.Interface.SubscribeXboxAxis(controllerId, index, callback, id)
+	}
+	
+	UnSubscribeXboxAxis(controllerId, index, id := 0){
+		this.Interface.UnSubscribeXboxAxis(controllerId, index, id)
+	}
+	
+	SubscribeXboxButton(controllerId, index, callback, id := 0){
+		this.Interface.SubscribeXboxButton(controllerId, index, callback, id)
+	}
+	
+	UnSubscribeXboxButton(controllerId, index, id := 0){
+		this.Interface.UnSubscribeXboxButton(controllerId, index, id)
+	}
+	
+	SubscribeXboxDpad(controllerId, index, povDirection, callback, id := 0){
+		this.Interface.SubscribeXboxDpad(controllerId, index, povDirection, callback, id)
+	}
+	
+	UnSubscribeXboxDpad(controllerId, index, povDirection, id := 0){
+		this.Interface.UnSubscribeXboxDpad(controllerId, index, povDirection, id)
 	}
 	
 
