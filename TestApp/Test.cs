@@ -17,6 +17,7 @@ namespace TestApp
 
             jw.SubscribeXboxAxis(1, 1, new Action<int>((value) => { Console.WriteLine("XBox Axis 1 Value: " + value); }), "LV1");
             jw.SubscribeXboxButton(1, 1, new Action<int>((value) => { Console.WriteLine("XBox Button 1 Value: " + value); }), "LV1");
+            jw.SubscribeXboxDpad(1, 1, new Action<int>((value) => { Console.WriteLine("XBox Dpad Up Value: " + value); }), "LV1");
             return;
 
             // You can enumerate available devices like this...

@@ -95,6 +95,12 @@ namespace JWNameSpace
             var subReq = new XInputSubscriptionRequest(XIInputType.Button, buttonId);
             return Subscribe((UserIndex)controllerId - 1, subReq, handler, id);
         }
+
+        public bool SubscribeXboxDpad(int controllerId, int povDirection, dynamic handler, string id = "0")
+        {
+            var subReq = new XInputSubscriptionRequest(XIInputType.Dpad, povDirection);
+            return Subscribe((UserIndex)controllerId - 1, subReq, handler, id);
+        }
         #endregion
 
         #region Querying Methods
@@ -687,12 +693,14 @@ namespace JWNameSpace
             public Controller controller;
             public Dictionary<int, SubscribedXIInput> SubscribedAxes { get; set; }
             public Dictionary<int, SubscribedXIInput> SubscribedButtons { get; set; }
+            public Dictionary<int, SubscribedXIInput> SubscribedDpadDirections { get; set; }
 
             public SubscribedXIStick(UserIndex controllerId)
             {
                 controller = new Controller(controllerId);
                 SubscribedAxes = new Dictionary<int, SubscribedXIInput>();
                 SubscribedButtons = new Dictionary<int, SubscribedXIInput>();
+                SubscribedDpadDirections = new Dictionary<int, SubscribedXIInput>();
             }
 
             public bool Add(XInputSubscriptionRequest subReq, dynamic handler, string subscriberId, int povDirection)
@@ -716,6 +724,14 @@ namespace JWNameSpace
                         }
                         SubscribedButtons[buttonId].Add(handler, subscriberId, povDirection);
                         break;
+                    case XIInputType.Dpad:
+                        povDirection = subReq.InputIndex;
+                        if (!SubscribedDpadDirections.ContainsKey(povDirection))
+                        {
+                            SubscribedDpadDirections.Add(povDirection, new SubscribedXIInput());
+                        }
+                        SubscribedDpadDirections[povDirection].Add(handler, subscriberId, 0);
+                        break;
                 }
                 return true;
             }
@@ -734,6 +750,12 @@ namespace JWNameSpace
                     var value = Convert.ToInt32(flag != GamepadButtonFlags.None);
                     subscribedButton.Value.ProcessPollRecord(value);
                 }
+                foreach (var subscribedDpadDirection in SubscribedDpadDirections)
+                {
+                    var flag = state.Gamepad.Buttons & xinputDpadDirectionIdentifiers[subscribedDpadDirection.Key - 1];
+                    var value = Convert.ToInt32(flag != GamepadButtonFlags.None);
+                    subscribedDpadDirection.Value.ProcessPollRecord(value);
+                }
             }
         }
         #endregion
@@ -741,44 +763,25 @@ namespace JWNameSpace
         private class SubscribedXIInput
         {
             public Dictionary<string, Subscription> Subscriptions { get; set; }
-            public Dictionary<int, SubscribedPovDirection> PovDirectionSubscriptions { get; set; }
             public int CurrentValue { get; set; }
 
             public SubscribedXIInput()
             {
                 Subscriptions = new Dictionary<string, Subscription>(StringComparer.OrdinalIgnoreCase);
-                PovDirectionSubscriptions = new Dictionary<int, SubscribedPovDirection>();
                 CurrentValue = 0;
             }
 
-            public bool Add(dynamic handler, string subscriberID, int povDirection = 0)
+            public bool Add(dynamic handler, string subscriberID, int povDirection)
             {
-                if (povDirection == 0)
+                if (Subscriptions.ContainsKey(subscriberID))
                 {
-                    // Regular mapping
-                    if (Subscriptions.ContainsKey(subscriberID))
-                    {
-                        Subscriptions[subscriberID].Callback = handler;
-                    }
-                    else
-                    {
-                        Subscriptions.Add(subscriberID, new Subscription(handler));
-                    }
-                    return true;
+                    Subscriptions[subscriberID].Callback = handler;
                 }
                 else
                 {
-                    //Pov Direction Mapping
-                    if (povDirection < 1 || povDirection > 4)
-                    {
-                        return false;
-                    }
-                    if (!PovDirectionSubscriptions.ContainsKey(povDirection))
-                    {
-                        PovDirectionSubscriptions.Add(povDirection, new SubscribedPovDirection(povDirection));
-                    }
-                    return PovDirectionSubscriptions[povDirection].Add(subscriberID, handler);
+                    Subscriptions.Add(subscriberID, new Subscription(handler));
                 }
+                return true;
             }
 
             public void ProcessPollRecord(int value)
@@ -794,7 +797,7 @@ namespace JWNameSpace
             }
         }
 
-        public enum XIInputType { Axis, Button }
+        public enum XIInputType { Axis, Button, Dpad }
 
         private class XInputSubscriptionRequest
         {

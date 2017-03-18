@@ -74,5 +74,10 @@ namespace JWNameSpace
             , GamepadButtonFlags.LeftShoulder, GamepadButtonFlags.RightShoulder, GamepadButtonFlags.Back, GamepadButtonFlags.Start
             , GamepadButtonFlags.LeftThumb, GamepadButtonFlags.RightThumb
         };
+
+        private static List<GamepadButtonFlags> xinputDpadDirectionIdentifiers = new List<GamepadButtonFlags>()
+        {
+            GamepadButtonFlags.DPadUp, GamepadButtonFlags.DPadRight, GamepadButtonFlags.DPadDown, GamepadButtonFlags.DPadLeft
+        };
     }
 }
