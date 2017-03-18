@@ -19,6 +19,8 @@ namespace JWNameSpace
 
         #region Public API Endpoints
         #region Subscription Methods
+        
+        #region DirectInput
         // --------------------------- Subscribe / Unsubscribe methods ----------------------------------------
         public bool SubscribeAxis(string guid, int index, dynamic handler, string id = "0")
         {
@@ -83,7 +85,9 @@ namespace JWNameSpace
             var offset = inputMappings[InputType.POV][index - 1];
             return UnSubscribe(guid, offset, id, povDirection);
         }
+        #endregion
 
+        #region XInput
         public bool SubscribeXboxAxis(int controllerId, int axisId, dynamic handler, string id = "0")
         {
             var subReq = new XInputSubscriptionRequest(XIInputType.Axis, axisId);
@@ -101,6 +105,8 @@ namespace JWNameSpace
             var subReq = new XInputSubscriptionRequest(XIInputType.Dpad, povDirection);
             return Subscribe((UserIndex)controllerId - 1, subReq, handler, id);
         }
+        #endregion
+
         #endregion
 
         #region Querying Methods
@@ -213,6 +219,8 @@ namespace JWNameSpace
 
         // ================================================== PRIVATE  ==============================================================
 
+        #region Private
+
         #region Subscription Methods
         private bool Subscribe(string guid, JoystickOffset offset, dynamic handler, string id, int povDirection = 0)
         {
@@ -241,21 +249,9 @@ namespace JWNameSpace
         }
         #endregion
 
-        #region Helper Methods
-        private bool IsStickType(DeviceInstance deviceInstance)
-        {
-            return deviceInstance.Type == SharpDX.DirectInput.DeviceType.Joystick
-                    || deviceInstance.Type == SharpDX.DirectInput.DeviceType.Gamepad
-                    || deviceInstance.Type == SharpDX.DirectInput.DeviceType.FirstPerson
-                    || deviceInstance.Type == SharpDX.DirectInput.DeviceType.Flight
-                    || deviceInstance.Type == SharpDX.DirectInput.DeviceType.Driving
-                    || deviceInstance.Type == SharpDX.DirectInput.DeviceType.Supplemental;
-        }
-        #endregion
-
         #region Subscription Handling Classes
         // ------------------------------------------ Subscription Handling -------------------------------------------------
-
+        #region Common
         #region All Sticks
         // Handles storing subscriptions for (and processing input of) a collection of joysticks
         private class SubscribedSticks
@@ -408,6 +404,22 @@ namespace JWNameSpace
         }
         #endregion
 
+        #region Subscription
+        // Holds information on a given subscription
+        private class Subscription
+        {
+            public dynamic Callback { get; set; }
+
+            public Subscription(dynamic callback)
+            {
+                Callback = callback;
+            }
+        }
+        #endregion
+
+        #endregion
+
+        #region DirectInput
         #region Single Stick
         // Handles storing subscriptions for (and processing input of) a specific joystick
         private class SubscribedDirectXStick
@@ -672,19 +684,6 @@ namespace JWNameSpace
         }
         #endregion
 
-        #region Subscription
-        // Holds information on a given subscription
-        private class Subscription
-        {
-            public dynamic Callback { get; set; }
-
-            public Subscription(dynamic callback)
-            {
-                Callback = callback;
-            }
-        }
-        #endregion
-
         #endregion
 
         #region XInput
@@ -741,7 +740,7 @@ namespace JWNameSpace
                 var state = controller.GetState();
                 foreach (var subscribedAxis in SubscribedAxes)
                 {
-                    var value = Convert.ToInt32(state.Gamepad.GetType().GetField(xinputAxisIdentifiers[subscribedAxis.Key-1]).GetValue(state.Gamepad));
+                    var value = Convert.ToInt32(state.Gamepad.GetType().GetField(xinputAxisIdentifiers[subscribedAxis.Key - 1]).GetValue(state.Gamepad));
                     subscribedAxis.Value.ProcessPollRecord(value);
                 }
                 foreach (var subscribedButton in SubscribedButtons)
@@ -758,7 +757,6 @@ namespace JWNameSpace
                 }
             }
         }
-        #endregion
 
         private class SubscribedXIInput
         {
@@ -797,8 +795,6 @@ namespace JWNameSpace
             }
         }
 
-        public enum XIInputType { Axis, Button, Dpad }
-
         private class XInputSubscriptionRequest
         {
             public XIInputType InputType;
@@ -809,5 +805,23 @@ namespace JWNameSpace
                 InputIndex = inputIndex;
             }
         }
+
+        #endregion
+
+        #endregion
+
+        #region Helper Methods
+        private bool IsStickType(DeviceInstance deviceInstance)
+        {
+            return deviceInstance.Type == SharpDX.DirectInput.DeviceType.Joystick
+                    || deviceInstance.Type == SharpDX.DirectInput.DeviceType.Gamepad
+                    || deviceInstance.Type == SharpDX.DirectInput.DeviceType.FirstPerson
+                    || deviceInstance.Type == SharpDX.DirectInput.DeviceType.Flight
+                    || deviceInstance.Type == SharpDX.DirectInput.DeviceType.Driving
+                    || deviceInstance.Type == SharpDX.DirectInput.DeviceType.Supplemental;
+        }
+        #endregion
+
+        #endregion
     }
 }

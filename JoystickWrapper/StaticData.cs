@@ -60,6 +60,7 @@ namespace JWNameSpace
             }
         };
 
+        public enum XIInputType { Axis, Button, Dpad }
         private enum xinputAxes {  LeftThumbX = 1, LeftThumbY, RightThumbX, RightThumbY, LeftTrigger, RightTrigger }
         private enum xinputButtons { A = 1, B, X, Y, L, R, Back, Start, LS, RS }
 
