@@ -94,16 +94,31 @@ namespace JWNameSpace
             return Subscribe((UserIndex)controllerId - 1, subReq, handler, id);
         }
 
+        public bool UnsubscribeXBoxAxis(int controllerId, int axisId, string id = "0")
+        {
+            return true;
+        }
+
         public bool SubscribeXboxButton(int controllerId, int buttonId, dynamic handler, string id = "0")
         {
             var subReq = new XInputSubscriptionRequest(XIInputType.Button, buttonId);
             return Subscribe((UserIndex)controllerId - 1, subReq, handler, id);
         }
 
+        public bool UnsubscribeXBoxButton(int controllerId, int buttonId, string id = "0")
+        {
+            return true;
+        }
+
         public bool SubscribeXboxDpad(int controllerId, int povDirection, dynamic handler, string id = "0")
         {
             var subReq = new XInputSubscriptionRequest(XIInputType.Dpad, povDirection);
             return Subscribe((UserIndex)controllerId - 1, subReq, handler, id);
+        }
+
+        public bool UnsubscribeXBoxDpad(int controllerId, int povDirection, string id = "0")
+        {
+            return true;
         }
         #endregion
 
