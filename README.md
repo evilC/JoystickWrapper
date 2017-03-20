@@ -7,7 +7,7 @@
 ### What?
 A C# DLL wrapper using SharpDX, to replace AHK's joystick functionality  
 
-Recordings of an AutoHotkey script loading the C# DLL and subscribing to inputs
+Recordings of an AutoHotkey script loading the C# DLL and subscribing to inputs via DirectInput and XInput
 ![demo1](https://i.imgur.com/gv560cS.gif])
 ![demo2](https://i.imgur.com/IUUbwQg.gif)
 
