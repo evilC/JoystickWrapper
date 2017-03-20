@@ -88,9 +88,9 @@ If omitted, "0" is used.
 Returns a list of devices, their names, guids, and capabilities.
 
 #### GetAnyDeviceGuid
+    guid := jw.GetAnyDeviceGuid()
+    jw.SuscribeAxis(guid, 1)
 Gets any guid that it can find. Useful to make demo scripts simple  
-    guid := jw.GetAnyDeviceGuid()  
-    jw.SuscribeAxis(guid, 1)  
 
 ## Goals
 ~~striked items~~ are done
