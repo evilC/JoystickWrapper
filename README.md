@@ -55,29 +55,32 @@ If omitted, "0" is used.
 #### Subscribe / Unsubscribe Axis  
     jw.SubscribeAxis(<stick guid>, <axis id>, <callback>[ ,<subscriber id>])
     jw.UnSubscribeAxis(<stick guid>, <axis id>, [ ,<subscriber id>])
-axis id = 1 - 8  
+    
+    axis id = 1 - 8  
 
 #### Subscribe / Unsubscribe Button  
     jw.SubscribeButton(<stick guid>, <button id>, <callback>[ ,<subscriber id>])
     jw.UnSubscribeButton(<stick guid>, <button id>, [ ,<subscriber id>])
-button id = 1 - 128  
+    
+    button id = 1 - 128  
 
 #### Subscribe / Unsubscribe POV (D-Pad)  
     jw.SubscribePov(<stick guid>, <pov id>, <callback>[ ,<subscriber id>])
     jw.UnSubscribePov(<stick guid>, <pov id>, [ ,<subscriber id>])
-pov id = 1 - 4  
+    
+    pov id = 1 - 4  
 
 #### Subscribe / Unsubscribe POV Direction (Up / Down / Left / Right)  
     jw.SubscribePovDirection(<stick guid>, <pov id>, <pov direction>,<callback>[ ,<subscriber id>])
     jw.UnSubscribePovDirection(<stick guid>, <pov id>, <pov direction> ,[ ,<subscriber id>])
-
-pov id = 1 - 4 
-pov direction =  
-1 : Up / North  
-2: Right / East  
-3: Down / South  
-4: Left / West  
-Each direction has a tolerance of 90 degrees, so eg up + right will trigger both up and right.  
+    
+    pov id = 1 - 4 
+    pov direction =  
+        1 : Up / North  
+        2: Right / East  
+        3: Down / South  
+        4: Left / West  
+    Each direction has a tolerance of 90 degrees, so eg up + right will trigger both up and right.  
 
 ### Query Methods
 #### GetDevices
