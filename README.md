@@ -5,7 +5,11 @@
 ---
 
 ### What?
-A C# DLL wrapper using SharpDX, to replace AHK's joystick functionality
+A C# DLL wrapper using SharpDX, to replace AHK's joystick functionality  
+
+Recordings of an AutoHotkey script loading the C# DLL and subscribing to inputs
+![demo1](https://i.imgur.com/gv560cS.gif])
+![demo2](https://i.imgur.com/IUUbwQg.gif)
 
 ### Why?
 I *love* AutoHotkey, but frankly it's joystick support sucks, for the following reasons:
@@ -91,11 +95,6 @@ Returns a list of devices, their names, guids, and capabilities.
     guid := jw.GetAnyDeviceGuid()
     jw.SuscribeAxis(guid, 1)
 Gets any guid that it can find. Useful to make demo scripts simple  
-
-### Pics or it didn't happen
-Recordings of an AutoHotkey script loading the C# DLL and subscribing to inputs
-![demo1](https://i.imgur.com/gv560cS.gif])
-![demo2](https://i.imgur.com/IUUbwQg.gif)
 
 ## Goals
 ~~striked items~~ are done
