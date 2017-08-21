@@ -157,7 +157,7 @@ class WrappedLV {
 
 	__New(hGui, options := "", columns := "", callback := 0){
 		this.hGui := hGui
-		this.Callback := callbacl
+		this.Callback := callback
 		Gui, % hGui ":Add", ListView, % "hwndhwnd " options, % columns
 		this.hLV := hwnd
 		this.SelectLV()
