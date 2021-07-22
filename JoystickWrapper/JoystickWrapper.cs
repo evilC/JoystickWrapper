@@ -124,6 +124,11 @@ namespace JWNameSpace
             var subReq = new XInputSubscriptionRequest(XIInputType.Dpad, povDirection);
             return UnSubscribe((UserIndex)controllerId - 1, subReq, subscriberId);
         }
+
+        public void SetXboxRumble()
+        {
+            stickSubscriptions.XInputSticks[UserIndex.One].SetRumble();
+        }
         #endregion
 
         #endregion Subscription Methods
@@ -906,6 +911,13 @@ namespace JWNameSpace
                     var value = Convert.ToInt32(flag != GamepadButtonFlags.None);
                     subscribedDpadDirection.Value.ProcessPollRecord(value);
                 }
+            }
+
+            public void SetRumble()
+            {
+                var vibration = new Vibration();
+                vibration.LeftMotorSpeed = UInt16.MaxValue;
+                controller.SetVibration(vibration);
             }
         }
 
