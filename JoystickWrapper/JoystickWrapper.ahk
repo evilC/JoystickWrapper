@@ -93,10 +93,9 @@ class JoystickWrapper {
 		return this._ProcessDeviceList(this.Interface.GetXInputDevices())
 	}
 	
-	;~ SetXboxRumble(controllerId, value){
-	SetXboxRumble(controllerId){
+	SetXboxRumble(controllerId, whichMotor){
 		;~ this.Interface.SetXboxRumble(controllerId, value, 0)
-		this.Interface.SetXboxRumble(controllerId)
+		this.Interface.SetXboxRumble(controllerId, whichMotor)
 	}
 	
 	; --- Common ---
