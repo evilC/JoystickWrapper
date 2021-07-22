@@ -125,9 +125,11 @@ namespace JWNameSpace
             return UnSubscribe((UserIndex)controllerId - 1, subReq, subscriberId);
         }
 
+        //public void SetXboxRumble(int controllerId, ushort? leftMotor = null, ushort? rightMotor = null)
         public void SetXboxRumble()
         {
-            stickSubscriptions.XInputSticks[UserIndex.One].SetRumble();
+            stickSubscriptions.XInputSticks[UserIndex.One].SetRumble(ushort.MaxValue);
+            //stickSubscriptions.XInputSticks[(UserIndex)controllerId - 1].SetRumble(leftMotor, rightMotor);
         }
         #endregion
 
@@ -913,11 +915,21 @@ namespace JWNameSpace
                 }
             }
 
-            public void SetRumble()
+            //public void SetRumble(ushort? leftMotor, ushort? rightMotor)
+            public void SetRumble(ushort leftMotor)
             {
-                var vibration = new Vibration();
-                vibration.LeftMotorSpeed = UInt16.MaxValue;
-                controller.SetVibration(vibration);
+                //if (leftMotor != null)
+                //{
+                    var vibration = new Vibration();
+                    vibration.LeftMotorSpeed = (ushort)leftMotor;
+                    controller.SetVibration(vibration);
+                //}
+                //if (rightMotor != null)
+                //{
+                //    var vibration = new Vibration();
+                //    vibration.RightMotorSpeed = (ushort)rightMotor;
+                //    controller.SetVibration(vibration);
+                //}
             }
         }
 
