@@ -2,7 +2,10 @@
 #Include JoystickWrapper.ahk
 jw := new JoystickWrapper("JoystickWrapper.dll")
 
-device := jw.GetXInputDevices(1)
+devices := jw.GetXInputDevices()
+if (devices.Length() == 0){
+	msgbox % "No XInput devices found"
+}
 jw.SubscribeXboxAxis(1, 3, Func("OnTrigger").Bind(1))
 jw.SubscribeXboxAxis(1, 6, Func("OnTrigger").Bind(2))
 
