@@ -9,7 +9,7 @@ jw.SubscribeXboxAxis(1, 3, Func("OnTrigger"))
 OnTrigger(value){
 	global jw
 	;~ jw.SetXboxRumble(1, value * 257)
-	jw.SetXboxRumble()
+	jw.SetXboxRumble(1)
 }
 a := 1
 ;~ if (guid := jw.GetAnyDeviceGuid()){

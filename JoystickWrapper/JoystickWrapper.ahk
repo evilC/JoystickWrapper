@@ -94,9 +94,9 @@ class JoystickWrapper {
 	}
 	
 	;~ SetXboxRumble(controllerId, value){
-	SetXboxRumble(){
+	SetXboxRumble(controllerId){
 		;~ this.Interface.SetXboxRumble(controllerId, value, 0)
-		this.Interface.SetXboxRumble()
+		this.Interface.SetXboxRumble(controllerId)
 	}
 	
 	; --- Common ---

@@ -126,9 +126,9 @@ namespace JWNameSpace
         }
 
         //public void SetXboxRumble(int controllerId, ushort? leftMotor = null, ushort? rightMotor = null)
-        public void SetXboxRumble()
+        public void SetXboxRumble(int controllerId)
         {
-            stickSubscriptions.XInputSticks[UserIndex.One].SetRumble(ushort.MaxValue);
+            stickSubscriptions.XInputSticks[(UserIndex)controllerId - 1].SetRumble(ushort.MaxValue);
             //stickSubscriptions.XInputSticks[(UserIndex)controllerId - 1].SetRumble(leftMotor, rightMotor);
         }
         #endregion
