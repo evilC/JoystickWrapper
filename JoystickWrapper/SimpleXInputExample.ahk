@@ -3,28 +3,14 @@
 jw := new JoystickWrapper("JoystickWrapper.dll")
 
 device := jw.GetXInputDevices(1)
-jw.SubscribeXboxAxis(1, 3, Func("OnTrigger"))
-;~ jw.SubscribeXboxAxis(1, 6, Func("OnTrigger"))
+jw.SubscribeXboxAxis(1, 3, Func("OnTrigger").Bind(1))
+jw.SubscribeXboxAxis(1, 6, Func("OnTrigger").Bind(2))
 
-OnTrigger(value){
+OnTrigger(whichMotor, value){
 	global jw
-	;~ jw.SetXboxRumble(1, value * 257)
-	jw.SetXboxRumble(1, 1, value * 257)
+	; Trigger axis reports 0..256, Rumble speed is 0...65535, so multiply axis value by 257
+	jw.SetXboxRumble(1, whichMotor, value * 257)
 }
-a := 1
-;~ if (guid := jw.GetAnyDeviceGuid()){
-	;~ jw.SubscribeAxis(guid, 1, Func("TestFunc").Bind("Axis"))
-	;~ jw.SubscribeButton(guid, 1, Func("TestFunc").Bind("Button"))
-	;~ jw.SubscribePov(guid, 1, Func("TestFunc").Bind("Pov"))
-	;~ jw.SubscribePovDirection(guid, 1, 1, Func("TestFunc").Bind("PovDirection"))
-;~ } else {
-	;~ MsgBox "No sticks found"
-	;~ ExitApp
-;~ }
-
-;~ TestFunc(type, value){
-	;~ Tooltip % type ": " value
-;~ }
 
 ^Esc::
 	ExitApp

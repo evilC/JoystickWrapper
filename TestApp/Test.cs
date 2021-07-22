@@ -58,8 +58,6 @@ namespace TestApp
                 jw.SubscribeXboxAxis(1, 1, new Action<int>((value) => { Console.WriteLine("XBox Axis 1 Value: " + value); }), "LV1");
                 jw.SubscribeXboxButton(1, 1, new Action<int>((value) => { Console.WriteLine("XBox Button 1 Value: " + value); }), "LV1");
                 jw.SubscribeXboxPovDirection(1, 1, new Action<int>((value) => { Console.WriteLine("XBox Dpad Up Value: " + value); }), "LV1");
-                //jw.SetXboxRumble(1, UInt16.MaxValue);
-                //jw.SetXboxRumble();
             }
 
         }
