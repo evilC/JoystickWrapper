@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
 
@@ -125,11 +126,14 @@ namespace JWNameSpace
             return UnSubscribe((UserIndex)controllerId - 1, subReq, subscriberId);
         }
 
-        //public void SetXboxRumble(int controllerId, ushort? leftMotor = null, ushort? rightMotor = null)
         public void SetXboxRumble(int controllerId, int whichMotor, ushort speed)
         {
-            stickSubscriptions.XInputSticks[(UserIndex)controllerId - 1].SetRumble(whichMotor, speed);
-            //stickSubscriptions.XInputSticks[(UserIndex)controllerId - 1].SetRumble(leftMotor, rightMotor);
+            var controllerIndex = (UserIndex) controllerId - 1;
+            if (!stickSubscriptions.XInputSticks.ContainsKey(controllerIndex))
+            {
+                throw new Exception($"Controller {controllerId} is not subscribed");
+            }
+            stickSubscriptions.XInputSticks[controllerIndex].SetRumble(whichMotor, speed);
         }
         #endregion
 
@@ -337,14 +341,14 @@ namespace JWNameSpace
         // Handles storing subscriptions for (and processing input of) a collection of joysticks
         private class SubscribedSticks
         {
-            public Dictionary<Guid, SubscribedDirectXStick> DirectXSticks { get; set; }
-            public Dictionary<UserIndex, SubscribedXIStick> XInputSticks { get; set; }
+            public ConcurrentDictionary<Guid, SubscribedDirectXStick> DirectXSticks { get; set; }
+            public ConcurrentDictionary<UserIndex, SubscribedXIStick> XInputSticks { get; set; }
             public bool threadRunning = false;
 
             public SubscribedSticks()
             {
-                DirectXSticks = new Dictionary<Guid, SubscribedDirectXStick>();
-                XInputSticks = new Dictionary<UserIndex, SubscribedXIStick>();
+                DirectXSticks = new ConcurrentDictionary<Guid, SubscribedDirectXStick>();
+                XInputSticks = new ConcurrentDictionary<UserIndex, SubscribedXIStick>();
             }
 
             // DirectInput
@@ -363,7 +367,7 @@ namespace JWNameSpace
                         return false;
                     }
                     var stick = new SubscribedDirectXStick(joystick);
-                    DirectXSticks.Add(guid, stick);
+                    DirectXSticks.TryAdd(guid, stick);
                 }
                 return true;
             }
@@ -377,7 +381,7 @@ namespace JWNameSpace
                 if (!XInputSticks.ContainsKey(player))
                 {
                     var subscribedController = new SubscribedXIStick(player);
-                    XInputSticks.Add(player, subscribedController);
+                    XInputSticks.TryAdd(player, subscribedController);
                 }
                 return true;
             }
@@ -445,7 +449,7 @@ namespace JWNameSpace
             {
                 if (DirectXSticks[guid].IsEmpty())
                 {
-                    DirectXSticks.Remove(guid);
+                    DirectXSticks.TryRemove(guid, out _);
                     SetMonitorState();
                     return true;
                 }
@@ -456,7 +460,7 @@ namespace JWNameSpace
             {
                 if (XInputSticks[controllerId].IsEmpty())
                 {
-                    XInputSticks.Remove(controllerId);
+                    XInputSticks.TryRemove(controllerId, out _);
                     SetMonitorState();
                     return true;
                 }
